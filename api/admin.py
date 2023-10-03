@@ -1,8 +1,9 @@
 from django.contrib import admin
-from .models import Note
+from .models import Product
 
 
 # FIXME: move admin to some safe url later
 
-#TODO: remove this later
-admin.site.register(Note)
+admin.site.register(Product)
+
+
