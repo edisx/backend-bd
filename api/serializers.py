@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from rest_framework_simplejwt.tokens import RefreshToken
-from .models import Product, ProductImage
+from .models import Product, ProductImage, Mesh, Color
 
 # Serializer for User
 class UserSerializer(serializers.ModelSerializer):
@@ -21,6 +21,7 @@ class UserSerializer(serializers.ModelSerializer):
             name = obj.email
         return name
 
+# Serializer for User with token
 class UserSerializerWithToken(UserSerializer):
     token = serializers.SerializerMethodField(read_only=True)
 
@@ -32,6 +33,20 @@ class UserSerializerWithToken(UserSerializer):
         token = RefreshToken.for_user(obj)
         return str(token.access_token)
 
+# Serializer for Color
+class ColorSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Color
+        fields = "__all__"
+
+# Serializer for Mesh
+class MeshSerializer(serializers.ModelSerializer):
+    colors = ColorSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Mesh
+        fields = "__all__"
+
 # Serializer for ProductImage
 class ProductImageSerializer(serializers.ModelSerializer):
     class Meta:
@@ -41,6 +56,7 @@ class ProductImageSerializer(serializers.ModelSerializer):
 # Serializer for Product
 class ProductSerializer(serializers.ModelSerializer):
     images = ProductImageSerializer(many=True, read_only=True)
+    meshes = MeshSerializer(many=True, read_only=True)
 
     class Meta:
         model = Product
