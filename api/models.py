@@ -1,74 +1,187 @@
 from django.db import models
+from django.contrib.auth.models import User
 import uuid
 from PIL import Image
 import os
 import trimesh
 
+
 # Helper functions
 def product_image_upload_path(instance, filename):
-    return f'products/{uuid.uuid4()}.jpg'
+    return f"products/{uuid.uuid4()}.jpg"
+
 
 def product_model_upload_path(instance, filename):
-    return f'models/{uuid.uuid4()}{os.path.splitext(filename)[-1]}'
+    return f"models/{uuid.uuid4()}{os.path.splitext(filename)[-1]}"
 
-# Product Model
-class Product(models.Model):
-    name = models.CharField(max_length=200)
-    price = models.DecimalField(max_digits=7, decimal_places=2)
-    main_image = models.ImageField(upload_to=product_image_upload_path, null=True, blank=True)
-    model_3d = models.FileField(upload_to=product_model_upload_path, null=True, blank=True)
 
-    def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
-        
-        if self.model_3d:
-            # Load the GLB file
-            mesh = trimesh.load_mesh(self.model_3d.path)
-
-            for name, geometry in mesh.geometry.items():
-                Mesh.objects.get_or_create(product=self, name=name)
-
-        if self.main_image:
-            img = Image.open(self.main_image.path)
-            if img.format != 'JPEG':
-                img = img.convert('RGB')
-                img.save(self.main_image.path, 'JPEG')
+# Category Model
+class Category(models.Model):
+    name = models.CharField(max_length=200, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.name
 
-# ProductImage Model
-class ProductImage(models.Model):
-    product = models.ForeignKey(Product, related_name='images', on_delete=models.CASCADE)
-    image = models.ImageField(upload_to=product_image_upload_path)
+
+# Product Model
+class Product(models.Model):
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    name = models.CharField(max_length=200)
+    category = models.ForeignKey(
+        Category, null=True, blank=True, on_delete=models.SET_NULL
+    )
+    description = models.TextField(null=True, blank=True)
+    rating = models.DecimalField(max_digits=7, decimal_places=2, null=True, blank=True)
+    num_reviews = models.IntegerField(null=True, blank=True, default=0)
+    price = models.DecimalField(max_digits=7, decimal_places=2)
+    count_in_stock = models.IntegerField(null=True, blank=True, default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    model_3d = models.FileField(
+        upload_to=product_model_upload_path, null=True, blank=True
+    )
+    visible = models.BooleanField(default=False)
 
     def save(self, *args, **kwargs):
-        super().save(*args, **kwargs) 
-        
+        super().save(*args, **kwargs)
+
+        if self.model_3d:
+            # Load the GLB file
+            mesh = trimesh.load_mesh(self.model_3d.path)
+
+            for name in mesh.geometry.items():
+                Mesh.objects.get_or_create(product=self, name=name)
+
+    def __str__(self):
+        return self.name
+
+
+# ProductImage Model
+class ProductImage(models.Model):
+    product = models.ForeignKey(
+        Product, related_name="images", on_delete=models.CASCADE
+    )
+    image = models.ImageField(upload_to=product_image_upload_path)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+
         # Open the saved image using PIL
         img = Image.open(self.image.path)
-        
+
         # Convert to JPG if it's not
-        if img.format != 'JPEG':
-            img = img.convert('RGB')
-            img.save(self.image.path, 'JPEG')
+        if img.format != "JPEG":
+            img = img.convert("RGB")
+            img.save(self.image.path, "JPEG")
 
     def __str__(self):
         return f"Image for {self.product.name}"
 
+
 # Mesh Model
 class Mesh(models.Model):
-    product = models.ForeignKey(Product, related_name='meshes', on_delete=models.CASCADE)
-    name = models.CharField(max_length=200)  # Name of the mesh as extracted from the .glb file
+    product = models.ForeignKey(
+        Product, related_name="meshes", on_delete=models.CASCADE
+    )
+    name = models.CharField(
+        max_length=200
+    )  # Name of the mesh as extracted from the .glb file
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f"Mesh {self.name} for {self.product.name}"
 
+
 # Color Model
 class Color(models.Model):
-    mesh = models.ForeignKey(Mesh, related_name='colors', on_delete=models.CASCADE)
+    mesh = models.ForeignKey(Mesh, related_name="colors", on_delete=models.CASCADE)
     color_name = models.CharField(max_length=50)  # e.g. "saddlebrown"
     hex_code = models.CharField(max_length=7)  # e.g. "#8B4513"
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f"Color {self.color_name} ({self.hex_code}) for {self.mesh.name}"
+
+
+# Review
+class Review(models.Model):
+    product = models.ForeignKey(
+        Product, related_name="reviews", on_delete=models.CASCADE
+    )
+    user = models.ForeignKey(User, related_name="reviews", on_delete=models.CASCADE)
+    name = models.CharField(max_length=200, null=True, blank=True)
+    rating = models.IntegerField(null=True, blank=True, default=0)
+    comment = models.TextField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Review for {self.product.name} by {self.user.username}"
+
+
+# Order
+class Order(models.Model):
+    user = models.ForeignKey(User, related_name="orders", on_delete=models.CASCADE)
+    payment_method = models.CharField(max_length=200, null=True, blank=True)
+    tax_price = models.DecimalField(
+        max_digits=7, decimal_places=2, null=True, blank=True
+    )
+    shipping_price = models.DecimalField(
+        max_digits=7, decimal_places=2, null=True, blank=True
+    )
+    total_price = models.DecimalField(
+        max_digits=7, decimal_places=2, null=True, blank=True
+    )
+    is_paid = models.BooleanField(default=False)
+    paid_at = models.DateTimeField(null=True, blank=True)
+    is_delivered = models.BooleanField(default=False)
+    delivered_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Order {self.id} for {self.user.username}"
+
+
+# OrderItem
+class OrderItem(models.Model):
+    order = models.ForeignKey(
+        Order, related_name="order_items", on_delete=models.CASCADE
+    )
+    product = models.ForeignKey(
+        Product, related_name="order_items", on_delete=models.CASCADE
+    )
+    name = models.CharField(max_length=200, null=True, blank=True)
+    quantity = models.IntegerField(null=True, blank=True, default=0)
+    price = models.DecimalField(max_digits=7, decimal_places=2, null=True, blank=True)
+    image = models.CharField(max_length=200, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"OrderItem {self.id} for {self.order.id}"
+
+
+# ShippingAddress
+class ShippingAddress(models.Model):
+    order = models.OneToOneField(
+        Order, related_name="shipping_address", on_delete=models.CASCADE
+    )
+    address = models.CharField(max_length=200, null=True, blank=True)
+    city = models.CharField(max_length=200, null=True, blank=True)
+    postal_code = models.CharField(max_length=200, null=True, blank=True)
+    country = models.CharField(max_length=200, null=True, blank=True)
+    shipping_price = models.DecimalField(
+        max_digits=7, decimal_places=2, null=True, blank=True
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"ShippingAddress for {self.order.id}"
