@@ -2,7 +2,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from rest_framework.permissions import IsAdminUser
 
 from api.serializers import CategorySerializer
 from api.models import Category
@@ -33,6 +33,11 @@ def createCategory(request):
     if "name" not in request.data:
         return Response(
             {"error": "Name field is required"}, status=status.HTTP_400_BAD_REQUEST
+        )
+    if Category.objects.filter(name=request.data["name"]).exists():
+        return Response(
+            {"error": "Category with this name already exists"},
+            status=status.HTTP_400_BAD_REQUEST,
         )
     category = Category.objects.create(name=request.data["name"])
     serializer = CategorySerializer(category, many=False)

@@ -53,17 +53,19 @@ class ProductImageSerializer(serializers.ModelSerializer):
         model = ProductImage
         fields = "__all__"
 
-# Serializer for Product
-class ProductSerializer(serializers.ModelSerializer):
-    images = ProductImageSerializer(many=True, read_only=True)
-    meshes = MeshSerializer(many=True, read_only=True)
-
-    class Meta:
-        model = Product
-        fields = "__all__"
-
 # Serializer for Category
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
         fields = "__all__"
+
+# Serializer for Product
+class ProductSerializer(serializers.ModelSerializer):
+    images = ProductImageSerializer(many=True, read_only=True)
+    meshes = MeshSerializer(many=True, read_only=True)
+    category = CategorySerializer(read_only=True)
+
+    class Meta:
+        model = Product
+        fields = "__all__"
+
