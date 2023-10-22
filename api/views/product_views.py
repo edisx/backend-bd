@@ -69,6 +69,7 @@ def updateProduct(request, pk):
     product.price = data.get("price", product.price)
     product.description = data.get("description", product.description)
     product.count_in_stock = data.get("count_in_stock", product.count_in_stock)
+    product.visible = data.get("visible", product.visible)
 
     category_id = data.get("category")
 
