@@ -48,10 +48,14 @@ class Product(models.Model):
         super().save(*args, **kwargs)
 
         if self.model_3d:
+            # Delete all meshes associated with this product
+            Mesh.objects.filter(product=self).delete()
+            
             # Load the GLB file
             mesh = trimesh.load_mesh(self.model_3d.path)
 
-            for name in mesh.geometry.items():
+            # dont delete this "geometry" key
+            for name, geometry in mesh.geometry.items():
                 Mesh.objects.get_or_create(product=self, name=name)
 
     def __str__(self):

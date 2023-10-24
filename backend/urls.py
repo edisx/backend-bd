@@ -11,6 +11,7 @@ urlpatterns = [
     path("api/users/", include("api.urls.user_urls")),
     path("api/categories/", include("api.urls.category_urls")),
     path("api/images/", include("api.urls.image_urls")),
+    path("api/models/", include("api.urls.model_urls")),
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -88,7 +88,5 @@ def updateProduct(request, pk):
     return Response(serializer.data)
 
 
-# upload images
 
 
-# upload 3d model
