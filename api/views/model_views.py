@@ -46,11 +46,14 @@ def deleteModel(request, pk):
     except Product.DoesNotExist:
         return Response({"detail": "Product not found"}, status=status.HTTP_404_NOT_FOUND)
 
+    # Delete all the meshes associated with the product
+    Mesh.objects.filter(product=product).delete()
+
     # Set the model_3d field to None and save
     product.model_3d = None
     product.save()
 
-    return Response({"detail": "Model deleted successfully."}, status=status.HTTP_200_OK)
+    return Response({"detail": "Model and associated meshes deleted successfully."}, status=status.HTTP_200_OK)
 
 
 # add color to mesh
