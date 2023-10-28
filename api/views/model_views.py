@@ -8,6 +8,9 @@ from api.models import Product, Color, Mesh
 
 from rest_framework import status
 
+import os
+from django.conf import settings
+
 
 
 
@@ -37,7 +40,6 @@ def createModel(request):
     return Response({"detail": "Model added successfully."}, status=status.HTTP_201_CREATED)
 
 
-# delete model from product
 @api_view(['DELETE'])
 @permission_classes([IsAdminUser])
 def deleteModel(request, pk):
@@ -49,11 +51,18 @@ def deleteModel(request, pk):
     # Delete all the meshes associated with the product
     Mesh.objects.filter(product=product).delete()
 
+    # Delete the 3D model file if it exists
+    if product.model_3d:
+        file_path = os.path.join(settings.MEDIA_ROOT, product.model_3d.path)
+        if os.path.exists(file_path):
+            os.remove(file_path)
+
     # Set the model_3d field to None and save
     product.model_3d = None
     product.save()
 
     return Response({"detail": "Model and associated meshes deleted successfully."}, status=status.HTTP_200_OK)
+
 
 
 # add color to mesh

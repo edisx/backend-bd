@@ -4,6 +4,7 @@ import uuid
 from PIL import Image
 import os
 import trimesh
+from django.conf import settings
 
 
 # Helper functions
@@ -50,13 +51,25 @@ class Product(models.Model):
         if self.model_3d:
             # Delete all meshes associated with this product
             Mesh.objects.filter(product=self).delete()
-            
+
             # Load the GLB file
             mesh = trimesh.load_mesh(self.model_3d.path)
 
             # dont delete this "geometry" key
             for name, geometry in mesh.geometry.items():
                 Mesh.objects.get_or_create(product=self, name=name)
+
+    def delete(self, *args, **kwargs):
+        # Check if there is a model associated and delete the file before deleting the instance
+        if self.model_3d:
+            file_path = os.path.join(settings.MEDIA_ROOT, self.model_3d.path)
+            if os.path.exists(file_path):
+                os.remove(file_path)
+
+        for img in self.images.all():
+            img.delete()
+
+        super().delete(*args, **kwargs)
 
     def __str__(self):
         return self.name
@@ -81,6 +94,13 @@ class ProductImage(models.Model):
         if img.format != "JPEG":
             img = img.convert("RGB")
             img.save(self.image.path, "JPEG")
+
+    def delete(self, *args, **kwargs):
+        if self.image:
+            file_path = os.path.join(settings.MEDIA_ROOT, self.image.path)
+            if os.path.exists(file_path):
+                os.remove(file_path)
+        super().delete(*args, **kwargs)
 
     def __str__(self):
         return f"Image for {self.product.name}"

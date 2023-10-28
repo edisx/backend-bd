@@ -43,7 +43,11 @@ def createImage(request):
 @api_view(["DELETE"])
 @permission_classes([IsAdminUser])
 def deleteImage(request, pk):
-    imageForDeletion = ProductImage.objects.get(id=pk)
-    imageForDeletion.delete()
-    return Response("Image deleted")
+    try:
+        imageForDeletion = ProductImage.objects.get(id=pk)
+        imageForDeletion.delete()
+        return Response("Image deleted", status=status.HTTP_200_OK)
+    except ProductImage.DoesNotExist:
+        return Response({"detail": "Image not found"}, status=status.HTTP_404_NOT_FOUND)
+
 
