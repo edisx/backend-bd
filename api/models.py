@@ -25,6 +25,13 @@ class Category(models.Model):
     def __str__(self):
         return self.name
 
+# ShoeSize Model
+class ShoeSize(models.Model):
+    size = models.IntegerField(unique=True)
+
+    def __str__(self):
+        return str(self.size)
+
 
 # Product Model
 class Product(models.Model):
@@ -34,6 +41,7 @@ class Product(models.Model):
         Category, null=True, blank=True, on_delete=models.SET_NULL
     )
     description = models.TextField(null=True, blank=True)
+    sizes = models.ManyToManyField(ShoeSize, blank=True, related_name='products')
     rating = models.DecimalField(max_digits=7, decimal_places=2, null=True, blank=True)
     num_reviews = models.IntegerField(null=True, blank=True, default=0)
     price = models.DecimalField(max_digits=7, decimal_places=2)

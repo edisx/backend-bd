@@ -1,7 +1,8 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from rest_framework_simplejwt.tokens import RefreshToken
-from .models import Product, ProductImage, Mesh, Color, Category
+from .models import Product, ProductImage, Mesh, Color, Category, ShoeSize
+
 
 # Serializer for User
 class UserSerializer(serializers.ModelSerializer):
@@ -21,6 +22,7 @@ class UserSerializer(serializers.ModelSerializer):
             name = obj.email
         return name
 
+
 # Serializer for User with token
 class UserSerializerWithToken(UserSerializer):
     token = serializers.SerializerMethodField(read_only=True)
@@ -33,11 +35,13 @@ class UserSerializerWithToken(UserSerializer):
         token = RefreshToken.for_user(obj)
         return str(token.access_token)
 
+
 # Serializer for Color
 class ColorSerializer(serializers.ModelSerializer):
     class Meta:
         model = Color
         fields = "__all__"
+
 
 # Serializer for Mesh
 class MeshSerializer(serializers.ModelSerializer):
@@ -47,11 +51,13 @@ class MeshSerializer(serializers.ModelSerializer):
         model = Mesh
         fields = "__all__"
 
+
 # Serializer for ProductImage
 class ProductImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProductImage
         fields = "__all__"
+
 
 # Serializer for Category
 class CategorySerializer(serializers.ModelSerializer):
@@ -59,13 +65,21 @@ class CategorySerializer(serializers.ModelSerializer):
         model = Category
         fields = "__all__"
 
+
+# Serializer for ShoeSize
+class ShoeSizeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ShoeSize
+        fields = "__all__"
+
+
 # Serializer for Product
 class ProductSerializer(serializers.ModelSerializer):
     images = ProductImageSerializer(many=True, read_only=True)
     meshes = MeshSerializer(many=True, read_only=True)
     category = CategorySerializer(read_only=True)
+    sizes = ShoeSizeSerializer(many=True, read_only=True)
 
     class Meta:
         model = Product
         fields = "__all__"
-

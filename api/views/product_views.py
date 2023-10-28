@@ -10,6 +10,9 @@ from api.models import Product, Category
 from rest_framework import status
 
 
+
+
+
 @api_view(["GET"])
 def getProducts(request):
     if request.user.is_staff:
