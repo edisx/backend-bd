@@ -57,9 +57,8 @@ class Product(models.Model):
         super().save(*args, **kwargs)
 
         if self.model_3d:
-            # Delete all meshes associated with this product
-            Mesh.objects.filter(product=self).delete()
-
+            # Delete all meshes associated with this product (DISABLED FOR NOW)
+            # Mesh.objects.filter(product=self).delete()
             # Load the GLB file
             mesh = trimesh.load_mesh(self.model_3d.path)
 
