@@ -189,9 +189,10 @@ class OrderItem(models.Model):
         Product, related_name="order_items", on_delete=models.CASCADE
     )
     name = models.CharField(max_length=200, null=True, blank=True)
-    quantity = models.IntegerField(null=True, blank=True, default=0)
     price = models.DecimalField(max_digits=7, decimal_places=2, null=True, blank=True)
     image = models.CharField(max_length=200, null=True, blank=True)
+    size = models.ForeignKey(ShoeSize, on_delete=models.SET_NULL, null=True, blank=True)  # add size field
+    colors = models.JSONField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
