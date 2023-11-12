@@ -191,7 +191,7 @@ class OrderItem(models.Model):
     name = models.CharField(max_length=200, null=True, blank=True)
     price = models.DecimalField(max_digits=7, decimal_places=2, null=True, blank=True)
     image = models.CharField(max_length=200, null=True, blank=True)
-    size = models.ForeignKey(ShoeSize, on_delete=models.SET_NULL, null=True, blank=True)  # add size field
+    size = models.ForeignKey(ShoeSize, on_delete=models.SET_NULL, null=True, blank=True)
     colors = models.JSONField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -209,9 +209,6 @@ class ShippingAddress(models.Model):
     city = models.CharField(max_length=200, null=True, blank=True)
     postal_code = models.CharField(max_length=200, null=True, blank=True)
     country = models.CharField(max_length=200, null=True, blank=True)
-    shipping_price = models.DecimalField(
-        max_digits=7, decimal_places=2, null=True, blank=True
-    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

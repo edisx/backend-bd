@@ -122,11 +122,11 @@ class OrderSerializer(serializers.ModelSerializer):
         return serializer.data
 
     def get_shippingAddress(self, obj):
-        try:
-            address = ShippingAddressSerializer(obj.shippingaddress, many=False).data
-        except:
-            address = False
-        return address
+        address = obj.shipping_address
+        if address:
+            return ShippingAddressSerializer(address, many=False).data
+        else:
+            return None
 
     def get_user(self, obj):
         user = obj.user
