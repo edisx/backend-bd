@@ -9,6 +9,8 @@ from datetime import datetime
 from django.utils import timezone
 from rest_framework.permissions import IsAdminUser
 from django.core.exceptions import ObjectDoesNotExist
+from django.db import transaction
+from django.http import JsonResponse
 
 
 # get all orders
@@ -22,67 +24,72 @@ def getOrders(request):
     return Response(serializer.data)
 
 
-# add order
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def addOrder(request):
     user = request.user
     data = request.data
 
-    if not data:
-        return Response(
-            {"detail": "No Order Items"}, status=status.HTTP_400_BAD_REQUEST
+    if not data or not data.get("orderItems"):
+        return Response({"detail": "No Order Items"}, status=status.HTTP_400_BAD_REQUEST)
+
+    with transaction.atomic():
+        # Step 1: Aggregate Product Quantities
+        product_quantities = {}
+        for item_data in data["orderItems"]:
+            product_id = item_data["product"]
+            product_quantities[product_id] = product_quantities.get(product_id, 0) + 1
+
+        # Step 2: Check Stock Availability
+        for product_id, quantity in product_quantities.items():
+            try:
+                product = Product.objects.get(id=product_id)
+                if quantity > product.count_in_stock:
+                    return JsonResponse({"detail": f"Insufficient stock for product '{product.name}'"},
+                                        status=status.HTTP_400_BAD_REQUEST)
+            except Product.DoesNotExist:
+                return JsonResponse({"detail": f"Product with ID {product_id} does not exist"},
+                                    status=status.HTTP_400_BAD_REQUEST)
+
+        # Create order
+        order = Order.objects.create(
+            user=user,
+            payment_method=data["paymentMethod"],
+            tax_price=data["taxPrice"],
+            shipping_price=data["shippingPrice"],
+            total_price=data["totalPrice"],
         )
 
-    orderItems = data.get("orderItems")
-
-    if not orderItems or len(orderItems) == 0:
-        return Response(
-            {"detail": "No Order Items"}, status=status.HTTP_400_BAD_REQUEST
-        )
-
-    # (1) Create order
-    order = Order.objects.create(
-        user=user,
-        payment_method=data["paymentMethod"],
-        tax_price=data["taxPrice"],
-        shipping_price=data["shippingPrice"],
-        total_price=data["totalPrice"],
-    )
-
-    # (2) Create shipping address
-    shipping = ShippingAddress.objects.create(
-        order=order,
-        address=data["shippingAddress"]["address"],
-        city=data["shippingAddress"]["city"],
-        postal_code=data["shippingAddress"]["postalCode"],
-        country=data["shippingAddress"]["country"],
-    )
-
-    # (3) Create order items and set order to orderItem relationship
-    for i in orderItems:
-        try:
-            product = Product.objects.get(id=i["product"])
-            size = ShoeSize.objects.get(id=i["size"]["id"]) if "size" in i else None
-        except ObjectDoesNotExist:
-            return Response(
-                {"detail": "Product does not exist"}, status=status.HTTP_400_BAD_REQUEST
-            )
-        colors = i.get("colors", {})
-
-        item = OrderItem.objects.create(
-            product=product,
+        # Create shipping address
+        shipping = ShippingAddress.objects.create(
             order=order,
-            name=i["name"],
-            price=i["price"],
-            image=i["image"],
-            size=size,
-            colors=colors,
+            address=data["shippingAddress"]["address"],
+            city=data["shippingAddress"]["city"],
+            postal_code=data["shippingAddress"]["postalCode"],
+            country=data["shippingAddress"]["country"],
         )
 
-    # (4) Update stock
-    product.count_in_stock -= 1
-    product.save()
+        # Create order items
+        for item_data in data["orderItems"]:
+            product = Product.objects.get(id=item_data["product"])
+            size = ShoeSize.objects.get(id=item_data["size"]["id"]) if "size" in item_data else None
+            colors = item_data.get("colors", {})
+
+            OrderItem.objects.create(
+                product=product,
+                order=order,
+                name=item_data["name"],
+                price=item_data["price"],
+                image=item_data["image"],
+                size=size,
+                colors=colors,
+            )
+
+        # Step 3: Update Stock
+        for product_id, quantity in product_quantities.items():
+            product = Product.objects.get(id=product_id)
+            product.count_in_stock -= quantity
+            product.save()
 
     serializer = OrderSerializer(order, many=False)
     return Response(serializer.data)

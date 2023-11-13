@@ -5,7 +5,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 
 from api.serializers import ProductSerializer
-from api.models import Product, Category
+from api.models import Product, Category, Review
 
 from rest_framework import status
 
@@ -89,6 +89,9 @@ def updateProduct(request, pk):
 
     serializer = ProductSerializer(product, many=False)
     return Response(serializer.data)
+
+
+# def createProductReview
 
 
 
