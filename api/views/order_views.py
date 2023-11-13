@@ -124,31 +124,31 @@ def updateOrderToPaid(request, pk):
 
     return Response("Order was paid")
 
-# # get my orders
-# @api_view(["GET"])
-# @permission_classes([IsAuthenticated])
-# def getMyOrders(request):
-#     user = request.user
+# get my orders
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def getMyOrders(request):
+    user = request.user
 
-#     orders = user.order_set.all()
+    orders = user.orders.all()
 
-#     serializer = OrderSerializer(orders, many=True)
+    serializer = OrderSerializer(orders, many=True)
 
-#     return Response(serializer.data)
-
-
+    return Response(serializer.data)
 
 
 
-# # update order to delivered
-# @api_view(["PUT"])
-# @permission_classes([IsAdminUser])
-# def updateOrderToDelivered(request, pk):
-#     order = Order.objects.get(id=pk)
 
-#     order.isDelivered = True
-#     order.deliveredAt = timezone.now()
 
-#     order.save()
+# update order to delivered
+@api_view(["PUT"])
+@permission_classes([IsAdminUser])
+def updateOrderToDelivered(request, pk):
+    order = Order.objects.get(id=pk)
 
-#     return Response("Order was delivered")
+    order.is_delivered = True
+    order.delivered_at = timezone.now()
+
+    order.save()
+
+    return Response("Order was delivered")
