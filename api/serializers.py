@@ -11,8 +11,14 @@ from .models import (
     Order,
     OrderItem,
     ShippingAddress,
+    Review,
 )
 
+# Serializer for Review
+class ReviewSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Review
+        fields = "__all__"
 
 # Serializer for User
 class UserSerializer(serializers.ModelSerializer):
@@ -89,10 +95,12 @@ class ProductSerializer(serializers.ModelSerializer):
     meshes = MeshSerializer(many=True, read_only=True)
     category = CategorySerializer(read_only=True)
     sizes = ShoeSizeSerializer(many=True, read_only=True)
+    reviews = ReviewSerializer(many=True, read_only=True)
 
     class Meta:
         model = Product
         fields = "__all__"
+
 
 
 class ShippingAddressSerializer(serializers.ModelSerializer):

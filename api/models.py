@@ -64,7 +64,8 @@ class Product(models.Model):
 
             # dont delete this "geometry" key
             for name, geometry in mesh.geometry.items():
-                Mesh.objects.get_or_create(product=self, name=name)
+                if "exclude" not in name:
+                    Mesh.objects.get_or_create(product=self, name=name)
 
     def delete(self, *args, **kwargs):
         # Check if there is a model associated and delete the file before deleting the instance
