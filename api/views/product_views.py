@@ -103,18 +103,18 @@ def createProductReview(request, pk):
     alreadyExists = product.reviews.filter(user=user).exists()
 
     if alreadyExists:
-        content = {"detail": "Product already reviewed"}
+        content = {"message": "Product already reviewed"}
         return Response(content, status=status.HTTP_400_BAD_REQUEST)
     
 
     # 2 - No Rating or 0
     elif "rating" not in data or data["rating"] == 0:
-        content = {"detail": "Please select a valid rating"}
+        content = {"message": "Please select a valid rating"}
         return Response(content, status=status.HTTP_400_BAD_REQUEST)
 
     # 2.5 - No Comment
     elif "comment" not in data or data["comment"].strip() == "":
-        content = {"detail": "Please enter a comment"}
+        content = {"message": "Please enter a comment"}
         return Response(content, status=status.HTTP_400_BAD_REQUEST)
 
     # 3 - Create review
@@ -136,7 +136,7 @@ def createProductReview(request, pk):
         
         product.rating = total / len(reviews)
         product.save()
-
+        
         return Response("Review added")
     
 
