@@ -37,5 +37,11 @@ class DeleteImageTest(TestCase):
         self.client.force_authenticate(user=None)
         response = self.client.delete(reverse('image-delete', kwargs={'pk': self.image.id}))
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_delete_product_cascade(self):
+        response = self.client.delete(reverse('product-delete', kwargs={'pk': self.product.id}))
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(ProductImage.objects.filter(id=self.image.id).exists())
+        self.assertFalse(Product.objects.filter(id=self.product.id).exists())
                                                   
 

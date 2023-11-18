@@ -41,3 +41,36 @@ class CreateImageTest(TestCase):
             reverse("image-create"), image_data, format="multipart"
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_create_image_without_product_id(self):
+        image_data = {
+            "image": SimpleUploadedFile(
+                name="test_image.jpg", content=b"", content_type="image/jpeg"
+            ),
+        }
+        response = self.client.post(
+            reverse("image-create"), image_data, format="multipart"
+        )
+        self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def test_create_image_without_image(self):
+        image_data = {"product_id": self.product.id}
+        response = self.client.post(
+            reverse("image-create"), image_data, format="multipart"
+        )
+        self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def test_create_image_without_authentication(self):
+        self.client.force_authenticate(user=None)
+        image_data = {
+            "product_id": self.product.id,
+            "image": SimpleUploadedFile(
+                name="test_image.jpg", content=b"", content_type="image/jpeg"
+            ),
+        }
+        response = self.client.post(
+            reverse("image-create"), image_data, format="multipart"
+        )
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+    
+

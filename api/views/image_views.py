@@ -13,6 +13,19 @@ from rest_framework import status
 @api_view(["POST"])
 @permission_classes([IsAdminUser])
 def createImage(request):
+    """
+    Create a new image for a product.
+
+    Args:
+        request (HttpRequest): The HTTP request object.
+
+    Returns:
+        Response: The HTTP response object containing the serialized image data.
+
+    Raises:
+        Product.DoesNotExist: If the specified product does not exist.
+        Exception: If an error occurs while adding the image.
+    """
     try:
         data = request.data
         product_id = data["product_id"]
@@ -39,6 +52,19 @@ def createImage(request):
 @api_view(["DELETE"])
 @permission_classes([IsAdminUser])
 def deleteImage(request, pk):
+    """
+    Delete an image by its primary key.
+
+    Args:
+        request (HttpRequest): The HTTP request object.
+        pk (int): The primary key of the image to be deleted.
+
+    Returns:
+        Response: The HTTP response indicating the result of the deletion.
+            - If the image is successfully deleted, returns HTTP 204 No Content.
+            - If the image is not found, returns HTTP 404 Not Found with an error message.
+            - If an error occurs during the deletion process, returns HTTP 500 Internal Server Error with an error message.
+    """
     try:
         imageForDeletion = ProductImage.objects.get(id=pk)
         imageForDeletion.delete()

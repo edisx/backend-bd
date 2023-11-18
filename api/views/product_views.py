@@ -46,7 +46,7 @@ def getProduct(request, pk):
 def deleteProduct(request, pk):
     productForDeletion = Product.objects.get(id=pk)
     productForDeletion.delete()
-    return Response("Product deleted")
+    return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 # create product
@@ -166,7 +166,7 @@ def deleteProductReview(request, pk, review_id):
         
         product.save()
 
-        return Response("Review deleted")
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     
     

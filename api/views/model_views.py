@@ -20,6 +20,20 @@ from api.serializers import ProductSerializer, MeshSerializer, ColorSerializer
 @api_view(['POST'])
 @permission_classes([IsAdminUser])
 def createModel(request):
+    """
+    Create a new 3D model for a product.
+
+    Args:
+        request (HttpRequest): The HTTP request object.
+
+    Returns:
+        Response: The HTTP response object containing the serialized product data if successful,
+        or an error response if there was an issue creating the model.
+
+    Raises:
+        Product.DoesNotExist: If the specified product ID does not exist.
+        Exception: If an error occurs while adding the model.
+    """
     try:
         data = request.data
         product_id = data.get('product_id')
@@ -34,7 +48,7 @@ def createModel(request):
         # Get the uploaded 3D model file from the request
         model_3d_file = request.FILES.get('model_3d')
         if not model_3d_file:
-            return Response({"errpr": "No 3D model file provided."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "No 3D model file provided."}, status=status.HTTP_400_BAD_REQUEST)
 
         # Set the model_3d field to the uploaded file and save
         product.model_3d = model_3d_file
@@ -50,25 +64,40 @@ def createModel(request):
 @api_view(['DELETE'])
 @permission_classes([IsAdminUser])
 def deleteModel(request, pk):
+    """
+    Delete the 3D model and associated meshes of a product.
+
+    Args:
+        request (HttpRequest): The HTTP request object.
+        pk (int): The ID of the product.
+
+    Returns:
+        Response: The HTTP response object.
+            - If the model and meshes are successfully deleted, returns a success message with status 200 (OK).
+            - If the product is not found, returns an error message with status 404 (Not Found).
+            - If an error occurs during deletion, returns an error message with status 500 (Internal Server Error).
+    """
     try:
         product = Product.objects.get(id=pk)
+
+        # Delete all the meshes associated with the product
+        Mesh.objects.filter(product=product).delete()
+
+        # Delete the 3D model file if it exists
+        if product.model_3d:
+            file_path = os.path.join(settings.MEDIA_ROOT, product.model_3d.path)
+            if os.path.exists(file_path):
+                os.remove(file_path)
+
+        product.model_3d = None
+        product.save()
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
     except Product.DoesNotExist:
-        return Response({"detail": "Product not found"}, status=status.HTTP_404_NOT_FOUND)
-
-    # Delete all the meshes associated with the product
-    Mesh.objects.filter(product=product).delete()
-
-    # Delete the 3D model file if it exists
-    if product.model_3d:
-        file_path = os.path.join(settings.MEDIA_ROOT, product.model_3d.path)
-        if os.path.exists(file_path):
-            os.remove(file_path)
-
-    # Set the model_3d field to None and save
-    product.model_3d = None
-    product.save()
-
-    return Response({"detail": "Model and associated meshes deleted successfully."}, status=status.HTTP_200_OK)
+        return Response({"error": "Product not found"}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({"error": "An error occurred while deleting the model"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 
@@ -76,73 +105,140 @@ def deleteModel(request, pk):
 @api_view(['POST'])
 @permission_classes([IsAdminUser])
 def addColor(request):
-    data = request.data
+    """
+    Add a new color for a mesh.
 
-    # Ensure mesh_id is present in the data
-    mesh_id = data.get('mesh_id')
-    if not mesh_id:
-        return Response({"detail": "No mesh ID provided."}, status=status.HTTP_400_BAD_REQUEST)
+    Args:
+        request (Request): The HTTP request object.
 
-    # Check if the mesh exists
+    Returns:
+        Response: The HTTP response object.
+
+    Raises:
+        Exception: If an error occurs while adding the color.
+    """
     try:
-        mesh = Mesh.objects.get(id=mesh_id)
-    except Mesh.DoesNotExist:
-        return Response({"detail": "Mesh not found."}, status=status.HTTP_404_NOT_FOUND)
+        data = request.data
 
-    # Extract color details
-    color_name = data.get('color_name')
-    hex_code = data.get('hex_code')
+        # Ensure mesh_id is present in the data
+        mesh_id = data.get('mesh_id')
+        if not mesh_id:
+            return Response({"error": "No mesh ID provided."}, status=status.HTTP_400_BAD_REQUEST)
 
-    # Validate color details
-    if not color_name or not hex_code:
-        return Response({"detail": "Color name or hex code not provided."}, status=status.HTTP_400_BAD_REQUEST)
+        # Check if the mesh exists
+        try:
+            mesh = Mesh.objects.get(id=mesh_id)
+        except Mesh.DoesNotExist:
+            return Response({"error": "Mesh not found."}, status=status.HTTP_404_NOT_FOUND)
 
-    # Check if the color for the mesh already exists
-    if Color.objects.filter(mesh=mesh, color_name=color_name).exists():
-        return Response({"detail": "Color already exists for this mesh."}, status=status.HTTP_400_BAD_REQUEST)
+        # Extract color details
+        color_name = data.get('color_name')
+        hex_code = data.get('hex_code')
 
-    # Create the new color
-    color = Color(mesh=mesh, color_name=color_name, hex_code=hex_code)
-    color.save()
+        # Validate color details
+        if not color_name or not hex_code:
+            return Response({"error": "Color name or hex code not provided."}, status=status.HTTP_400_BAD_REQUEST)
 
-    return Response({"detail": "Color added successfully."}, status=status.HTTP_201_CREATED)
+        # Check if the color for the mesh already exists
+        if Color.objects.filter(mesh=mesh, color_name=color_name).exists():
+            return Response({"error": "Color already exists for this mesh."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Create the new color
+        color = Color(mesh=mesh, color_name=color_name, hex_code=hex_code)
+        color.save()
+
+        serializer = ColorSerializer(color, many=False)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    except Exception as e:
+        return Response({"error": "An error occurred while adding the color"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 
 # update color
 @api_view(['PUT'])
 @permission_classes([IsAdminUser])
 def updateColor(request, pk):
-    data = request.data
+    """
+    Update the details of a color.
 
-    # Ensure pk is present in the data
-    if not pk:
-        return Response({"detail": "No color ID provided."}, status=status.HTTP_400_BAD_REQUEST)
+    Args:
+        request (HttpRequest): The HTTP request object.
+        pk (int): The ID of the color to be updated.
 
+    Returns:
+        Response: The HTTP response containing the updated color details.
 
-    # Check if the color exists
+    Raises:
+        Color.DoesNotExist: If the color with the given ID does not exist.
+        Exception: If an error occurs while updating the color.
+    """
     try:
-        color = Color.objects.get(id=pk)
-    except Color.DoesNotExist:
-        return Response({"detail": "Color not found."}, status=status.HTTP_404_NOT_FOUND)
+        data = request.data
 
-    # Extract color details
-    color_name = data.get('color_name')
-    hex_code = data.get('hex_code')
+        # Ensure pk is present in the data
+        if not pk:
+            return Response({"error": "No color ID provided."}, status=status.HTTP_400_BAD_REQUEST)
 
-    # Validate color details
-    if not color_name or not hex_code:
-        return Response({"detail": "Color name or hex code not provided."}, status=status.HTTP_400_BAD_REQUEST)
+        # Check if the color exists
+        try:
+            color = Color.objects.get(id=pk)
+        except Color.DoesNotExist:
+            return Response({"error": "Color not found."}, status=status.HTTP_404_NOT_FOUND)
 
-    # Update the color
-    color.color_name = color_name
-    color.hex_code = hex_code
-    color.save()
+        # Extract color details
+        color_name = data.get('color_name')
+        hex_code = data.get('hex_code')
 
-    return Response({"detail": "Color updated successfully."}, status=status.HTTP_200_OK)
+        # Validate color details
+        if not color_name or not hex_code:
+            return Response({"error": "Color name or hex code not provided."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Update the color
+        color.color_name = color_name
+        color.hex_code = hex_code
+        color.save()
+
+        serializer = ColorSerializer(color, many=False)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response({"error": "An error occurred while updating the color"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
+
+# remove color from mesh
+@api_view(['DELETE'])
+@permission_classes([IsAdminUser])
+def deleteColor(request, pk):
+    try:
+        # Ensure pk is present in the data
+        if not pk:
+            return Response({"error": "No color ID provided."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Check if the color exists
+        try:
+            color = Color.objects.get(id=pk)
+        except Color.DoesNotExist:
+            return Response({"error": "Color not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Delete the color
+        color.delete()
+
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
+    except Exception as e:
+        return Response({"error": "An error occurred while deleting the color"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
 
 @api_view(['POST'])
 @permission_classes([IsAdminUser])
 def addColors(request):
+    """
+    Not featured in actual website, but used for testing purposes.
+    """
     data = request.data
 
     # Ensure mesh_id is present in the data
@@ -178,28 +274,6 @@ def addColors(request):
         color.save()
 
     return Response({"detail": "Colors added successfully."}, status=status.HTTP_201_CREATED)
-
-
-# remove color from mesh
-@api_view(['DELETE'])
-@permission_classes([IsAdminUser])
-def deleteColor(request, pk):
-    # Ensure pk is present in the data
-    if not pk:
-        return Response({"detail": "No color ID provided."}, status=status.HTTP_400_BAD_REQUEST)
-
-    # Check if the color exists
-    try:
-        color = Color.objects.get(id=pk)
-    except Color.DoesNotExist:
-        return Response({"detail": "Color not found."}, status=status.HTTP_404_NOT_FOUND)
-
-    # Delete the color
-    color.delete()
-
-    return Response({"detail": "Color deleted successfully."}, status=status.HTTP_200_OK)
-
-
 
 
 
