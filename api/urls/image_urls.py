@@ -4,5 +4,5 @@ from api.views import image_views as views
 
 urlpatterns = [
     path("create/", views.createImage, name="image-create"),
-    path("delete/<str:pk>/", views.deleteImage, name="image-update"),
+    path("delete/<str:pk>/", views.deleteImage, name="image-delete"),
 ]

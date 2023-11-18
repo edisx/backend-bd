@@ -11,6 +11,8 @@ from rest_framework import status
 import os
 from django.conf import settings
 
+from api.serializers import ProductSerializer, MeshSerializer, ColorSerializer
+
 
 
 
@@ -18,26 +20,31 @@ from django.conf import settings
 @api_view(['POST'])
 @permission_classes([IsAdminUser])
 def createModel(request):
-    data = request.data
-    product_id = data.get('product_id')
-    if not product_id:
-        return Response({"detail": "No product ID provided."}, status=status.HTTP_400_BAD_REQUEST)
-
     try:
-        product = Product.objects.get(id=product_id)
-    except Product.DoesNotExist:
-        return Response({"detail": "Product not found"}, status=status.HTTP_404_NOT_FOUND)
+        data = request.data
+        product_id = data.get('product_id')
+        if not product_id:
+            return Response({"error": "No product ID provided."}, status=status.HTTP_400_BAD_REQUEST)
 
-    # Get the uploaded 3D model file from the request
-    model_3d_file = request.FILES.get('model_3d')
-    if not model_3d_file:
-        return Response({"detail": "No 3D model file provided."}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            product = Product.objects.get(id=product_id)
+        except Product.DoesNotExist:
+            return Response({"error": "Product not found"}, status=status.HTTP_404_NOT_FOUND)
 
-    # Set the model_3d field to the uploaded file and save
-    product.model_3d = model_3d_file
-    product.save()
+        # Get the uploaded 3D model file from the request
+        model_3d_file = request.FILES.get('model_3d')
+        if not model_3d_file:
+            return Response({"errpr": "No 3D model file provided."}, status=status.HTTP_400_BAD_REQUEST)
 
-    return Response({"detail": "Model added successfully."}, status=status.HTTP_201_CREATED)
+        # Set the model_3d field to the uploaded file and save
+        product.model_3d = model_3d_file
+        product.save()
+        serializer = ProductSerializer(product, many=False)
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
+    except Exception as e:
+        return Response({"error": "Error occurred while adding the model"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @api_view(['DELETE'])
