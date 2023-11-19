@@ -6,6 +6,7 @@ from api.models import Product, ProductImage, User
 from django.core.files.uploadedfile import SimpleUploadedFile
 import os
 from django.conf import settings
+import colorama
 
 class DeleteImageTest(TestCase):
     def setUp(self):
@@ -31,11 +32,13 @@ class DeleteImageTest(TestCase):
 
     def test_delete_nonexistent_image(self):
         response = self.client.delete(reverse('image-delete', kwargs={'pk': 999}))
+        print(colorama.Fore.MAGENTA + "Response Data:", response.json())
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_delete_image_without_authentication(self):
         self.client.force_authenticate(user=None)
         response = self.client.delete(reverse('image-delete', kwargs={'pk': self.image.id}))
+        print(colorama.Fore.MAGENTA + "Response Data:", response.json())
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_delete_product_cascade(self):

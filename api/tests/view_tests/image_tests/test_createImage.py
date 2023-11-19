@@ -6,6 +6,7 @@ from api.models import Product, ProductImage, User
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.conf import settings
 import os
+import colorama
 
 
 class CreateImageTest(TestCase):
@@ -26,6 +27,7 @@ class CreateImageTest(TestCase):
                 "image": SimpleUploadedFile(name='test_image.jpg', content=img_file.read(), content_type='image/jpeg')
             }
             response = self.client.post(reverse('image-create'), image_data, format='multipart')
+            print(colorama.Fore.MAGENTA + "Response Data:", response.json())
         
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(ProductImage.objects.filter(product=self.product).exists())
@@ -40,6 +42,7 @@ class CreateImageTest(TestCase):
         response = self.client.post(
             reverse("image-create"), image_data, format="multipart"
         )
+        print(colorama.Fore.MAGENTA + "Response Data:", response.json())
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_create_image_without_product_id(self):
@@ -51,6 +54,7 @@ class CreateImageTest(TestCase):
         response = self.client.post(
             reverse("image-create"), image_data, format="multipart"
         )
+        print(colorama.Fore.MAGENTA + "Response Data:", response.json())
         self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def test_create_image_without_image(self):
@@ -58,6 +62,7 @@ class CreateImageTest(TestCase):
         response = self.client.post(
             reverse("image-create"), image_data, format="multipart"
         )
+        print(colorama.Fore.MAGENTA + "Response Data:", response.json())
         self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def test_create_image_without_authentication(self):
@@ -71,6 +76,7 @@ class CreateImageTest(TestCase):
         response = self.client.post(
             reverse("image-create"), image_data, format="multipart"
         )
+        print(colorama.Fore.MAGENTA + "Response Data:", response.json())
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
     
 

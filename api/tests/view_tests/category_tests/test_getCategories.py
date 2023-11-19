@@ -4,6 +4,7 @@ from rest_framework import status
 from django.urls import reverse
 from api.models import Category
 from api.serializers import CategorySerializer
+import colorama
 
 class GetCategoriesTest(TestCase):
     def setUp(self):
@@ -18,6 +19,8 @@ class GetCategoriesTest(TestCase):
         Test retrieving all categories.
         """
         response = self.client.get(reverse('categories'))
+        print(colorama.Fore.MAGENTA + "Response Data:", response.json())
+
         categories = Category.objects.all()
         serializer = CategorySerializer(categories, many=True)
 
@@ -30,6 +33,8 @@ class GetCategoriesTest(TestCase):
         """
         Category.objects.all().delete()  # Clearing all category entries
         response = self.client.get(reverse('categories'))
+        print(colorama.Fore.MAGENTA + "Response Data:", response.json())
+
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data, [])  # Expecting an empty list

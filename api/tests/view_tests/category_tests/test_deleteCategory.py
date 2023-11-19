@@ -4,6 +4,7 @@ from rest_framework.test import APIClient
 from rest_framework import status
 from api.models import Category
 from django.contrib.auth.models import User
+import colorama
 
 class DeleteCategoryTest(TestCase):
     def setUp(self):
@@ -31,6 +32,7 @@ class DeleteCategoryTest(TestCase):
     def test_category_not_found(self):
         self.client.force_authenticate(user=self.admin_user)
         response = self.client.delete(reverse('category-delete', kwargs={'pk': 999}))
+        print(colorama.Fore.MAGENTA + "Response Data:", response.json())
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertEqual(response.data['error'], 'Category not found')
 
@@ -43,4 +45,5 @@ class DeleteCategoryTest(TestCase):
         )
         self.client.force_authenticate(user=non_admin_user)
         response = self.client.delete(reverse('category-delete', kwargs={'pk': self.category2.pk}))
+        print(colorama.Fore.MAGENTA + "Response Data:", response.json())
         self.assertNotEqual(response.status_code, status.HTTP_204_NO_CONTENT)

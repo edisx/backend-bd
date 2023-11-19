@@ -7,7 +7,7 @@ import django.db.models.deletion
 
 def populate_shoe_sizes(apps, schema_editor):
     ShoeSize = apps.get_model('api', 'ShoeSize')
-    for size in range(36, 47):  # or any range you want
+    for size in range(36, 47): 
         ShoeSize.objects.create(size=size)
 
 class Migration(migrations.Migration):

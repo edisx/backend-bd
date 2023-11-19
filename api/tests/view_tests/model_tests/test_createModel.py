@@ -6,6 +6,7 @@ from api.models import Product, User
 from django.core.files.uploadedfile import SimpleUploadedFile
 import os
 from django.conf import settings
+import colorama
 
 class CreateModelTest(TestCase):
     def setUp(self):
@@ -24,6 +25,7 @@ class CreateModelTest(TestCase):
                 'model_3d': SimpleUploadedFile(name='sample_model.glb', content=model_file.read(), content_type='application/octet-stream')
             }
             response = self.client.post(reverse('model-create'), data, format='multipart')
+            print(colorama.Fore.MAGENTA + "Response Data:", response.json())
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.product.refresh_from_db()
@@ -36,6 +38,7 @@ class CreateModelTest(TestCase):
                 'model_3d': SimpleUploadedFile(name='sample_model.glb', content=model_file.read(), content_type='application/octet-stream')
             }
             response = self.client.post(reverse('model-create'), data, format='multipart')
+            print(colorama.Fore.MAGENTA + "Response Data:", response.json())
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
@@ -47,6 +50,7 @@ class CreateModelTest(TestCase):
                 'model_3d': SimpleUploadedFile(name='sample_model.glb', content=model_file.read(), content_type='application/octet-stream')
             }
             response = self.client.post(reverse('model-create'), data, format='multipart')
+            print(colorama.Fore.MAGENTA + "Response Data:", response.json())
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
@@ -55,5 +59,6 @@ class CreateModelTest(TestCase):
             'product_id': self.product.id
         }
         response = self.client.post(reverse('model-create'), data, format='multipart')
+        print(colorama.Fore.MAGENTA + "Response Data:", response.json())
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)

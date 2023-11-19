@@ -5,6 +5,7 @@ from rest_framework import status
 from api.models import Product, User, Mesh
 import os
 from django.conf import settings
+import colorama
 
 class DeleteModelTest(TestCase):
     def setUp(self):
@@ -28,11 +29,13 @@ class DeleteModelTest(TestCase):
 
     def test_delete_model_nonexistent_product(self):
         response = self.client.delete(reverse('model-delete', kwargs={'pk': 999}))
+        print(colorama.Fore.MAGENTA + "Response Data:", response.json())
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_delete_model_permission_denied(self):
         self.client.force_authenticate(user=User.objects.create_user('user', 'user@example.com', 'user123'))
         response = self.client.delete(reverse('model-delete', kwargs={'pk': self.product.id}))
+        print(colorama.Fore.MAGENTA + "Response Data:", response.json())
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     

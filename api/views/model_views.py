@@ -244,18 +244,18 @@ def addColors(request):
     # Ensure mesh_id is present in the data
     mesh_id = data.get('mesh_id')
     if not mesh_id:
-        return Response({"detail": "No mesh ID provided."}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"error": "No mesh ID provided."}, status=status.HTTP_400_BAD_REQUEST)
 
     # Check if the mesh exists
     try:
         mesh = Mesh.objects.get(id=mesh_id)
     except Mesh.DoesNotExist:
-        return Response({"detail": "Mesh not found."}, status=status.HTTP_404_NOT_FOUND)
+        return Response({"error": "Mesh not found."}, status=status.HTTP_404_NOT_FOUND)
 
     # Expecting 'colors' to be a list of color data
     colors_data = data.get('colors')
     if not colors_data or not isinstance(colors_data, list):
-        return Response({"detail": "Invalid or missing colors data."}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"error": "Invalid or missing colors data."}, status=status.HTTP_400_BAD_REQUEST)
 
     for color_data in colors_data:
         color_name = color_data.get('color_name')
@@ -263,7 +263,7 @@ def addColors(request):
 
         # Validate each color's details
         if not color_name or not hex_code:
-            return Response({"detail": "Color name or hex code not provided."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "Color name or hex code not provided."}, status=status.HTTP_400_BAD_REQUEST)
 
         # Check if the color for the mesh already exists
         if Color.objects.filter(mesh=mesh, color_name=color_name).exists():
@@ -272,8 +272,10 @@ def addColors(request):
         # Create the new color
         color = Color(mesh=mesh, color_name=color_name, hex_code=hex_code)
         color.save()
+    
+    serializer = ColorSerializer(mesh.colors, many=True)
 
-    return Response({"detail": "Colors added successfully."}, status=status.HTTP_201_CREATED)
+    return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 

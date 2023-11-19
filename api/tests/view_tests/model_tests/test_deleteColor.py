@@ -4,6 +4,7 @@ from rest_framework.test import APIClient
 from rest_framework import status
 from api.models import Mesh, Product, User, Color
 import os
+import colorama
 
 class DeleteColorTest(TestCase):
     def setUp(self):
@@ -27,9 +28,11 @@ class DeleteColorTest(TestCase):
     def test_delete_color_nonexistent(self):
         self.client.force_authenticate(user=self.admin_user)
         response = self.client.delete(reverse('color-delete', kwargs={'pk': 999}))
+        print(colorama.Fore.MAGENTA + "Response Data:", response.json())
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_delete_color_permission_denied(self):
         self.client.force_authenticate(user=self.regular_user)
         response = self.client.delete(reverse('color-delete', kwargs={'pk': self.color.id}))
+        print(colorama.Fore.MAGENTA + "Response Data:", response.json())
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)

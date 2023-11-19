@@ -4,6 +4,7 @@ from rest_framework.test import APIClient
 from rest_framework import status
 from api.models import Mesh, Product, User, Color
 import os
+import colorama
 
 class AddColorTest(TestCase):
     def setUp(self):
@@ -21,6 +22,7 @@ class AddColorTest(TestCase):
         self.client.force_authenticate(user=self.admin_user)
         color_data = {'mesh_id': self.mesh.id, 'color_name': 'Red', 'hex_code': '#FF0000'}
         response = self.client.post(reverse('color-create'), color_data)
+        print(colorama.Fore.MAGENTA + "Response Data:", response.json())
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(Color.objects.filter(mesh=self.mesh, color_name='Red').exists())
 
@@ -28,12 +30,14 @@ class AddColorTest(TestCase):
         self.client.force_authenticate(user=self.admin_user)
         incomplete_data = {'mesh_id': self.mesh.id, 'color_name': 'Blue'}
         response = self.client.post(reverse('color-create'), incomplete_data)
+        print(colorama.Fore.MAGENTA + "Response Data:", response.json())
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_add_color_permission_denied(self):
         self.client.force_authenticate(user=self.regular_user)
         color_data = {'mesh_id': self.mesh.id, 'color_name': 'Green', 'hex_code': '#008000'}
         response = self.client.post(reverse('color-create'), color_data)
+        print(colorama.Fore.MAGENTA + "Response Data:", response.json())
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_add_color_duplicate(self):
@@ -41,5 +45,6 @@ class AddColorTest(TestCase):
         Color.objects.create(mesh=self.mesh, color_name='Yellow', hex_code='#FFFF00')
         duplicate_data = {'mesh_id': self.mesh.id, 'color_name': 'Yellow', 'hex_code': '#FFFF00'}
         response = self.client.post(reverse('color-create'), duplicate_data)
+        print(colorama.Fore.MAGENTA + "Response Data:", response.json())
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 

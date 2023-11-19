@@ -12,21 +12,47 @@ from rest_framework import status
 
 @api_view(["GET"])
 def getSizes(request):
-    sizes = ShoeSize.objects.all()
-    serializer = ShoeSizeSerializer(sizes, many=True)
-    return Response(serializer.data)
+    """
+    Retrieve all shoe sizes and return them as a response.
+
+    Args:
+        request: The HTTP request object.
+
+    Returns:
+        A Response object containing the serialized shoe sizes data.
+
+    Raises:
+        Exception: If there is an internal server error.
+    """
+    try:
+        sizes = ShoeSize.objects.all()
+        serializer = ShoeSizeSerializer(sizes, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response(
+            {"error": "Internal server error"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
 
 
 @api_view(["POST"])
 @permission_classes([IsAdminUser])
 def updateProductSizes(request):
     data = request.data
-    product_id = data.get("product_id", None)
-    size_ids = data.get("size_ids", [])  # This should be a list of size IDs
+    product_id = data.get("product_id")
+    size_ids = data.get("size_ids")
+
+    print("Received data:", data)
 
     if product_id is None or size_ids is None:
         return Response(
-            {"detail": "product_id and size_ids are required."},
+            {"error": "product_id and size_ids are required."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    if not isinstance(size_ids, list):
+        return Response(
+            {"error": "size_ids must be a list."},
             status=status.HTTP_400_BAD_REQUEST,
         )
 
@@ -34,18 +60,20 @@ def updateProductSizes(request):
         product = Product.objects.get(id=product_id)
     except Product.DoesNotExist:
         return Response(
-            {"detail": "Product not found."}, status=status.HTTP_404_NOT_FOUND
+            {"error": "Product not found."},
+            status=status.HTTP_404_NOT_FOUND
         )
 
-    # Get sizes from IDs
-    sizes_to_add = ShoeSize.objects.filter(id__in=size_ids)
+    # Check if size IDs are valid
+    valid_sizes = ShoeSize.objects.filter(id__in=size_ids)
+    if not valid_sizes.exists():
+        return Response(
+            {"error": "One or more size_ids are invalid."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
-    # Clear all sizes from the product first
     product.sizes.clear()
+    product.sizes.add(*valid_sizes)
 
-    # Add the sizes to the product
-    product.sizes.add(*sizes_to_add)
-
-    # Optionally, return the updated product
     serializer = ProductSerializer(product)
     return Response(serializer.data, status=status.HTTP_200_OK)
