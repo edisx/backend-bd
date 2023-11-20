@@ -7,6 +7,7 @@ from api.serializers import UserSerializer, UserSerializerWithToken
 from django.contrib.auth.models import User
 from django.contrib.auth.hashers import make_password
 from rest_framework import status
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
 import logging
 
@@ -147,30 +148,30 @@ def getUserProfile(request):
 @api_view(["GET"])
 @permission_classes([IsAdminUser])
 def getUsers(request):
-    """
-    Retrieve all users from the database and return a serialized response.
-
-    Args:
-        request: The HTTP request object.
-
-    Returns:
-        A Response object containing the serialized user data.
-
-    Raises:
-        Exception: If there is an internal server error.
-
-    """
     try:
-        users = User.objects.all()
+        users = User.objects.all().order_by('id')
+
+        # Pagination
+        page = request.query_params.get("page") or 1
+        paginator = Paginator(users, 5)
+        page = int(page)
+
+        try:
+            users = paginator.page(page)
+        except PageNotAnInteger:
+            users = paginator.page(1)
+        except EmptyPage:
+            users = paginator.page(paginator.num_pages)
+
         serializer = UserSerializer(users, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response({'users': serializer.data, 'page': page, 'pages': paginator.num_pages}, status=status.HTTP_200_OK)
+
     except Exception as e:
         logger.error(e)
         return Response(
             {"error": "Internal server error"},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
-
 
 @api_view(["GET"])
 @permission_classes([IsAdminUser])

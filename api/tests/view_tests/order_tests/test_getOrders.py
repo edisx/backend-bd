@@ -34,3 +34,24 @@ class GetOrdersTest(TestCase):
         print(colorama.Fore.MAGENTA + "Response Data:", response.json())
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
+    def test_pagination_of_orders(self):
+        # Create more than 5 orders
+        for i in range(10):
+            user = User.objects.create_user(f'user{i}', f'user{i}@example.com', 'password123')
+            order = Order.objects.create(user=user, total_price=100.0 * i)
+            ShippingAddress.objects.create(order=order, address=f"{i} Test St", city="Test City", postal_code="12345", country="Testland")
+
+        self.client.force_authenticate(user=self.admin_user)
+
+        # Request the first page
+        response = self.client.get(reverse('orders'), {'page': 1})
+        print(colorama.Fore.MAGENTA + "Response Data:", response.json())
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.json()['orders']), 5)
+
+        # Request the second page
+        response = self.client.get(reverse('orders'), {'page': 2})
+        print(colorama.Fore.MAGENTA + "Response Data:", response.json())
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.json()['orders']), 5)
+

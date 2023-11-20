@@ -3,6 +3,7 @@ from rest_framework.response import Response
 
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
 from api.serializers import ProductSerializer
 from api.models import Product, Category, Review
@@ -44,8 +45,25 @@ def getProducts(request):
             else:
                 products = Product.objects.filter(visible=True)
 
+        products = products.order_by('id')
+
+        page = request.query_params.get('page', 1)
+        paginator = Paginator(products, 4) # n products per page
+
+        try:
+            products = paginator.page(page)
+        except PageNotAnInteger:
+            products = paginator.page(1)
+        except EmptyPage:
+            products = paginator.page(paginator.num_pages)
+        
+        if page == None:
+            page = 1
+        
+        page = int(page)
+
         serializer = ProductSerializer(products, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response({'products': serializer.data, 'page': page, 'pages': paginator.num_pages}, status=status.HTTP_200_OK)
     except Exception as e:
         logger.error(e)
         return Response(

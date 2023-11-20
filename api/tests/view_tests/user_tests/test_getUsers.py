@@ -42,4 +42,23 @@ class GetUsersTest(APITestCase):
         response = self.client.get(url)
         print(colorama.Fore.MAGENTA + "Response Data:", response.json())
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+    
+    def test_pagination_of_users(self):
+        # Create more than 5 users
+        for i in range(10):
+            User.objects.create_user(username=f'user{i}', password='password123')
+
+        self.api_authentication(self.admin_token)
+        url = reverse('users')
+
+        # Request the first page
+        response = self.client.get(url, {'page': 1})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data['users']), 5)
+
+        # Request the second page
+        response = self.client.get(url, {'page': 2})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data['users']), 5)
+
 

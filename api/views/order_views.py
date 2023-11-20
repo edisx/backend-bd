@@ -10,6 +10,7 @@ from rest_framework.permissions import IsAdminUser
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
 from django.http import JsonResponse
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
 import logging
 
@@ -33,11 +34,29 @@ def getOrders(request):
         a status code of 500 will be returned.
     """
     try:
-        orders = Order.objects.all()
+        orders = Order.objects.all().order_by("id")
+
+        page = request.query_params.get("page")
+        paginator = Paginator(orders, 5) # n orders per page
+
+        try:
+            orders = paginator.page(page)
+        except PageNotAnInteger:
+            orders = paginator.page(1)
+        except EmptyPage:
+            orders = paginator.page(paginator.num_pages)
+
+        if page is None:
+            page = 1
+
+        page = int(page)
+
+
 
         serializer = OrderSerializer(orders, many=True)
 
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response({'orders': serializer.data, 'page': page, 'pages': paginator.num_pages}, status=status.HTTP_200_OK)
+        
     except Exception as e:
         logger.error(e)
         return Response(
