@@ -30,9 +30,19 @@ def getProducts(request):
     """
     try:
         if request.user.is_staff:
-            products = Product.objects.all()
+            keyword = request.query_params.get('keyword', None)
+
+            if keyword:
+                products = Product.objects.filter(name__icontains=keyword)
+            else:
+                products = Product.objects.all()
         else:
-            products = Product.objects.filter(visible=True)
+            keyword = request.query_params.get('keyword', None)
+            
+            if keyword:
+                products = Product.objects.filter(visible=True, name__icontains=keyword)
+            else:
+                products = Product.objects.filter(visible=True)
 
         serializer = ProductSerializer(products, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
