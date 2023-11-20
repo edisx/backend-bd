@@ -9,6 +9,10 @@ from api.models import Category
 
 from rest_framework import status
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 @api_view(["GET"])
 def getCategories(request):
@@ -28,6 +32,7 @@ def getCategories(request):
         serializer = CategorySerializer(categories, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     except Exception as e:
+        logger.error(e)
         return Response(
             {"error": "Internal server error"},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -59,6 +64,7 @@ def deleteCategory(request, pk):
             {"error": "Category not found"}, status=status.HTTP_404_NOT_FOUND
         )
     except Exception as e:
+        logger.error(e)
         return Response(
             {"error": "An error occurred during category deletion"},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -96,6 +102,7 @@ def createCategory(request):
         serializer = CategorySerializer(category, many=False)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     except Exception as e:
+        logger.error(e)
         return Response(
             {"error": "An error occurred during category creation"},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -134,6 +141,7 @@ def updateCategory(request, pk):
             {"error": "Category not found"}, status=status.HTTP_404_NOT_FOUND
         )
     except Exception as e:
+        logger.error(e)
         return Response(
             {"error": "An error occurred during category update"},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,

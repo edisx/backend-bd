@@ -9,6 +9,11 @@ from api.models import ShoeSize, Product
 
 from rest_framework import status
 
+import logging
+
+logger = logging.getLogger(__name__)
+
+
 
 @api_view(["GET"])
 def getSizes(request):
@@ -29,6 +34,7 @@ def getSizes(request):
         serializer = ShoeSizeSerializer(sizes, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     except Exception as e:
+        logger.error(e)
         return Response(
             {"error": "Internal server error"},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -38,42 +44,49 @@ def getSizes(request):
 @api_view(["POST"])
 @permission_classes([IsAdminUser])
 def updateProductSizes(request):
-    data = request.data
-    product_id = data.get("product_id")
-    size_ids = data.get("size_ids")
-
-    print("Received data:", data)
-
-    if product_id is None or size_ids is None:
-        return Response(
-            {"error": "product_id and size_ids are required."},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-
-    if not isinstance(size_ids, list):
-        return Response(
-            {"error": "size_ids must be a list."},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-
     try:
-        product = Product.objects.get(id=product_id)
-    except Product.DoesNotExist:
+        data = request.data
+        product_id = data.get("product_id")
+        size_ids = data.get("size_ids")
+
+        print("Received data:", data)
+
+        if product_id is None or size_ids is None:
+            return Response(
+                {"error": "product_id and size_ids are required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not isinstance(size_ids, list):
+            return Response(
+                {"error": "size_ids must be a list."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            product = Product.objects.get(id=product_id)
+        except Product.DoesNotExist:
+            return Response(
+                {"error": "Product not found."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Check if size IDs are valid
+        valid_sizes = ShoeSize.objects.filter(id__in=size_ids)
+        if not valid_sizes.exists():
+            return Response(
+                {"error": "One or more size_ids are invalid."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        product.sizes.clear()
+        product.sizes.add(*valid_sizes)
+
+        serializer = ProductSerializer(product)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    except Exception as e:
+        logger.error(e)
         return Response(
-            {"error": "Product not found."},
-            status=status.HTTP_404_NOT_FOUND
+            {"error": "Internal server error"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
-
-    # Check if size IDs are valid
-    valid_sizes = ShoeSize.objects.filter(id__in=size_ids)
-    if not valid_sizes.exists():
-        return Response(
-            {"error": "One or more size_ids are invalid."},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-
-    product.sizes.clear()
-    product.sizes.add(*valid_sizes)
-
-    serializer = ProductSerializer(product)
-    return Response(serializer.data, status=status.HTTP_200_OK)

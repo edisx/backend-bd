@@ -11,6 +11,11 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
 from django.http import JsonResponse
 
+import logging
+
+logger = logging.getLogger(__name__)
+
+
 
 # get all orders
 @api_view(["GET"])
@@ -34,6 +39,7 @@ def getOrders(request):
 
         return Response(serializer.data, status=status.HTTP_200_OK)
     except Exception as e:
+        logger.error(e)
         return Response(
             {"error": "Internal server error"},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -75,6 +81,7 @@ def getOrderById(request, pk):
             {"error": "Order does not exist"}, status=status.HTTP_404_NOT_FOUND
         )
     except Exception as e:
+        logger.error(e)
         return Response(
             {"error": "Internal server error"},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -175,6 +182,7 @@ def addOrder(request):
         serializer = OrderSerializer(order, many=False)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     except Exception as e:
+        logger.error(e)
         return Response(
             {"error": "Internal server error"},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -207,6 +215,7 @@ def getMyOrders(request):
 
         return Response(serializer.data, status=status.HTTP_200_OK)
     except Exception as e:
+        logger.error(e)
         return Response(
             {"error": "Internal server error"},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -245,6 +254,7 @@ def updateOrderToPaid(request, pk):
             {"error": "Order does not exist"}, status=status.HTTP_404_NOT_FOUND
         )
     except Exception as e:
+        logger.error(e)
         return Response(
             {"error": "Internal server error"},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -287,6 +297,7 @@ def updateOrderToDelivered(request, pk):
             {"error": "Order does not exist"}, status=status.HTTP_404_NOT_FOUND
         )
     except Exception as e:
+        logger.error(e)
         return Response(
             {"error": "Internal server error"},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,

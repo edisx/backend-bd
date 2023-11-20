@@ -9,6 +9,11 @@ from api.models import ProductImage, Product
 
 from rest_framework import status
 
+import logging
+
+logger = logging.getLogger(__name__)
+
+
 
 @api_view(["POST"])
 @permission_classes([IsAdminUser])
@@ -43,6 +48,7 @@ def createImage(request):
         )
 
     except Exception as e:
+        logger.error(e)
         return Response(
             {"error": "Error occurred while adding the image"},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -72,6 +78,7 @@ def deleteImage(request, pk):
     except ProductImage.DoesNotExist:
         return Response({"error": "Image not found"}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
+        logger.error(e)
         return Response(
             {"error": "An error occurred while deleting the image"},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,

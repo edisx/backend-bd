@@ -12,23 +12,25 @@ import os
 from django.conf import settings
 
 from api.serializers import ProductSerializer, MeshSerializer, ColorSerializer
+from django.core.files.uploadedfile import UploadedFile
+
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 
-
-# add new model to product
 @api_view(['POST'])
 @permission_classes([IsAdminUser])
 def createModel(request):
     """
-    Create a new 3D model for a product.
+    Create a new model for a product.
 
     Args:
         request (HttpRequest): The HTTP request object.
 
     Returns:
-        Response: The HTTP response object containing the serialized product data if successful,
-        or an error response if there was an issue creating the model.
+        Response: The HTTP response object containing the created model data or an error message.
 
     Raises:
         Product.DoesNotExist: If the specified product ID does not exist.
@@ -50,6 +52,10 @@ def createModel(request):
         if not model_3d_file:
             return Response({"error": "No 3D model file provided."}, status=status.HTTP_400_BAD_REQUEST)
 
+        # Validate if the file is a .glb file
+        if isinstance(model_3d_file, UploadedFile) and not model_3d_file.name.endswith('.glb'):
+            return Response({"error": "Model must be a .glb file"}, status=status.HTTP_400_BAD_REQUEST)
+
         # Set the model_3d field to the uploaded file and save
         product.model_3d = model_3d_file
         product.save()
@@ -58,6 +64,7 @@ def createModel(request):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     
     except Exception as e:
+        logger.error(e)
         return Response({"error": "Error occurred while adding the model"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
@@ -97,6 +104,7 @@ def deleteModel(request, pk):
     except Product.DoesNotExist:
         return Response({"error": "Product not found"}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
+        logger.error(e)
         return Response({"error": "An error occurred while deleting the model"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
@@ -150,6 +158,7 @@ def addColor(request):
         serializer = ColorSerializer(color, many=False)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     except Exception as e:
+        logger.error(e)
         return Response({"error": "An error occurred while adding the color"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
@@ -202,6 +211,7 @@ def updateColor(request, pk):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     except Exception as e:
+        logger.error(e)
         return Response({"error": "An error occurred while updating the color"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
@@ -228,6 +238,7 @@ def deleteColor(request, pk):
 
         return Response(status=status.HTTP_204_NO_CONTENT)
     except Exception as e:
+        logger.error(e)
         return Response({"error": "An error occurred while deleting the color"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 

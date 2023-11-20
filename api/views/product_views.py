@@ -9,6 +9,9 @@ from api.models import Product, Category, Review
 
 from rest_framework import status
 
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 
@@ -34,6 +37,7 @@ def getProducts(request):
         serializer = ProductSerializer(products, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     except Exception as e:
+        logger.error(e)
         return Response(
             {"error": "Internal server error"},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -69,6 +73,7 @@ def getProduct(request, pk):
             {"error": "Product not available."}, status=status.HTTP_404_NOT_FOUND
         )
     except Exception as e:
+        logger.error(e)
         return Response(
             {"error": "Internal server error"},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -101,6 +106,7 @@ def deleteProduct(request, pk):
             {"error": "Product not found."}, status=status.HTTP_404_NOT_FOUND
         )
     except Exception as e:
+        logger.error(e)
         return Response(
             {"error": "Internal server error"},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -132,6 +138,7 @@ def createProduct(request):
         serializer = ProductSerializer(product, many=False)
         return Response(serializer.data)
     except Exception as e:
+        logger.error(e)
         return Response(
             {"error": "Internal server error"},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -185,6 +192,7 @@ def updateProduct(request, pk):
             {"error": "Product not found."}, status=status.HTTP_404_NOT_FOUND
         )
     except Exception as e:
+        logger.error(e)
         return Response(
             {"error": "Internal server error"},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -256,6 +264,7 @@ def createProductReview(request, pk):
             {"error": "Product not found."}, status=status.HTTP_404_NOT_FOUND
         )
     except Exception as e:
+        logger.error(e)
         return Response(
             {"error": "Internal server error"},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -310,6 +319,7 @@ def deleteProductReview(request, pk, review_id):
             {"error": "Review not found."}, status=status.HTTP_404_NOT_FOUND
         )
     except Exception as e:
+        logger.error(e)
         return Response(
             {"error": "Internal server error"},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,

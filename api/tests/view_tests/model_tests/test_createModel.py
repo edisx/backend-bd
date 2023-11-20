@@ -62,3 +62,16 @@ class CreateModelTest(TestCase):
         print(colorama.Fore.MAGENTA + "Response Data:", response.json())
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+    
+    def test_create_model_invalid_file_type(self):
+        test_image_path = os.path.join(settings.BASE_DIR, 'api', 'tests', 'test_files', 'sample_image.jpg')
+
+        with open(test_image_path, 'rb') as image_file:
+            data = {
+                'product_id': self.product.id,
+                'model_3d': SimpleUploadedFile(name='sample_image.jpg', content=image_file.read(), content_type='image/jpeg')
+            }
+            response = self.client.post(reverse('model-create'), data, format='multipart')
+            print(colorama.Fore.MAGENTA + "Response Data:", response.json())
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
