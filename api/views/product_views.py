@@ -32,37 +32,24 @@ def getProducts(request):
         If an error occurs, a Response object with an error message and status code 500 is returned.
     """
     try:
-        if request.user.is_staff:
-            keyword = request.query_params.get('keyword', None)
+        keyword = request.query_params.get('keyword', None)
+        category_id = request.query_params.get('category_id', None)
 
-            if keyword:
-                products = Product.objects.filter(name__icontains=keyword)
-            else:
-                products = Product.objects.all()
-        else:
-            keyword = request.query_params.get('keyword', None)
-            
-            if keyword:
-                products = Product.objects.filter(visible=True, name__icontains=keyword)
-            else:
-                products = Product.objects.filter(visible=True)
+        filters = {'visible': True} if not request.user.is_staff else {}
+        if keyword:
+            filters['name__icontains'] = keyword
+        if category_id:
+            filters['category_id'] = category_id
 
-        products = products.order_by('id')
+        products = Product.objects.filter(**filters).order_by('id')
 
-        page = request.query_params.get('page', 1)
-        paginator = Paginator(products, 4) # n products per page
+        page = int(request.query_params.get('page', 1))
+        paginator = Paginator(products, 4)  # n products per page
 
         try:
             products = paginator.page(page)
-        except PageNotAnInteger:
+        except (PageNotAnInteger, EmptyPage):
             products = paginator.page(1)
-        except EmptyPage:
-            products = paginator.page(paginator.num_pages)
-        
-        if page == None:
-            page = 1
-        
-        page = int(page)
 
         serializer = ProductSerializer(products, many=True)
         return Response({'products': serializer.data, 'page': page, 'pages': paginator.num_pages}, status=status.HTTP_200_OK)
@@ -72,8 +59,8 @@ def getProducts(request):
             {"error": "Internal server error"},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
-
-
+    
+    
 @api_view(["GET"])
 def getProduct(request, pk):
     """
