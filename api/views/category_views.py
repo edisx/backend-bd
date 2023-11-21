@@ -8,6 +8,7 @@ from api.serializers import CategorySerializer
 from api.models import Category
 
 from rest_framework import status
+from api.permissions import IsSuperUser
 
 import logging
 
@@ -40,9 +41,10 @@ def getCategories(request):
 
 
 @api_view(["DELETE"])
-@permission_classes([IsAdminUser])
+@permission_classes([IsSuperUser])
 def deleteCategory(request, pk):
     """
+    TODO: tests
     Delete a category by its primary key.
 
     Args:
@@ -72,9 +74,10 @@ def deleteCategory(request, pk):
 
 
 @api_view(["POST"])
-@permission_classes([IsAdminUser])
+@permission_classes([IsSuperUser])
 def createCategory(request):
     """
+    TODO: tests
     Create a new category.
 
     Args:
@@ -110,9 +113,10 @@ def createCategory(request):
 
 
 @api_view(["PUT"])
-@permission_classes([IsAdminUser])
+@permission_classes([IsSuperUser])
 def updateCategory(request, pk):
     """
+    TODO: tests
     Update a category with the given primary key.
 
     Args:

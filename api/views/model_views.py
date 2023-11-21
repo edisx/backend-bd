@@ -13,6 +13,7 @@ from django.conf import settings
 
 from api.serializers import ProductSerializer, MeshSerializer, ColorSerializer
 from django.core.files.uploadedfile import UploadedFile
+from api.permissions import IsSuperUser
 
 import logging
 
@@ -21,9 +22,10 @@ logger = logging.getLogger(__name__)
 
 
 @api_view(['POST'])
-@permission_classes([IsAdminUser])
+@permission_classes([IsSuperUser])
 def createModel(request):
     """
+    TODO: tests
     Create a new model for a product.
 
     Args:
@@ -69,9 +71,10 @@ def createModel(request):
 
 
 @api_view(['DELETE'])
-@permission_classes([IsAdminUser])
+@permission_classes([IsSuperUser])
 def deleteModel(request, pk):
     """
+    TODO: tests
     Delete the 3D model and associated meshes of a product.
 
     Args:
@@ -111,9 +114,10 @@ def deleteModel(request, pk):
 
 # add color to mesh
 @api_view(['POST'])
-@permission_classes([IsAdminUser])
+@permission_classes([IsSuperUser])
 def addColor(request):
     """
+    TODO: tests
     Add a new color for a mesh.
 
     Args:
@@ -165,9 +169,10 @@ def addColor(request):
 
 # update color
 @api_view(['PUT'])
-@permission_classes([IsAdminUser])
+@permission_classes([IsSuperUser])
 def updateColor(request, pk):
     """
+    TODO: tests
     Update the details of a color.
 
     Args:
@@ -219,8 +224,19 @@ def updateColor(request, pk):
 
 # remove color from mesh
 @api_view(['DELETE'])
-@permission_classes([IsAdminUser])
+@permission_classes([IsSuperUser])
 def deleteColor(request, pk):
+    """
+    TODO: tests
+    Delete a color object.
+
+    Args:
+        request (HttpRequest): The HTTP request object.
+        pk (int): The ID of the color object to be deleted.
+
+    Returns:
+        Response: HTTP response indicating the success or failure of the deletion.
+    """
     try:
         # Ensure pk is present in the data
         if not pk:
@@ -235,7 +251,6 @@ def deleteColor(request, pk):
         # Delete the color
         color.delete()
 
-
         return Response(status=status.HTTP_204_NO_CONTENT)
     except Exception as e:
         logger.error(e)
@@ -245,9 +260,10 @@ def deleteColor(request, pk):
 
 
 @api_view(['POST'])
-@permission_classes([IsAdminUser])
+@permission_classes([IsSuperUser])
 def addColors(request):
     """
+    TODO: tests
     Not featured in actual website, but used for testing purposes.
     """
     data = request.data

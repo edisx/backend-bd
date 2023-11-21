@@ -5,7 +5,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 
 from api.serializers import ShoeSizeSerializer, ProductSerializer
-from api.models import ShoeSize, Product
+from api.models import ShoeSize, Product, ActionLog
 
 from rest_framework import status
 
@@ -49,7 +49,6 @@ def updateProductSizes(request):
         product_id = data.get("product_id")
         size_ids = data.get("size_ids")
 
-        print("Received data:", data)
 
         if product_id is None or size_ids is None:
             return Response(
@@ -71,7 +70,21 @@ def updateProductSizes(request):
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        # Check if size IDs are valid
+        current_size_ids = set(product.sizes.values_list('id', flat=True))
+        new_size_ids = set(size_ids)
+
+        current_sizes = ShoeSize.objects.filter(id__in=current_size_ids).values_list('size', flat=True)
+        new_sizes = ShoeSize.objects.filter(id__in=new_size_ids).values_list('size', flat=True)
+
+
+        if current_size_ids == new_size_ids:
+            return Response(
+                {"detail": "Product sizes are already up to date."},
+                status=status.HTTP_200_OK
+            )
+        
+        
+
         valid_sizes = ShoeSize.objects.filter(id__in=size_ids)
         if not valid_sizes.exists():
             return Response(
@@ -81,6 +94,17 @@ def updateProductSizes(request):
 
         product.sizes.clear()
         product.sizes.add(*valid_sizes)
+
+        # Format the sizes for logging
+        formatted_current_sizes = ', '.join(map(str, current_sizes))
+        formatted_new_sizes = ', '.join(map(str, new_sizes))
+
+        ActionLog.objects.create(
+            user=request.user,
+            action=f"User {request.user.first_name} updated product sizes for {product.name} from [{formatted_current_sizes}] to [{formatted_new_sizes}]."
+        )
+
+
 
         serializer = ProductSerializer(product)
         return Response(serializer.data, status=status.HTTP_200_OK)

@@ -2,7 +2,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth.models import User
-from api.models import Product, Order, OrderItem, ShippingAddress, ShoeSize
+from api.models import Product, Order, OrderItem, ShippingAddress, ShoeSize, ActionLog
 from api.serializers import ProductSerializer, OrderSerializer
 from rest_framework import status
 from django.utils import timezone
@@ -34,7 +34,7 @@ def getOrders(request):
         a status code of 500 will be returned.
     """
     try:
-        orders = Order.objects.all().order_by("id")
+        orders = Order.objects.all().order_by("-id")
 
         page = request.query_params.get("page")
         paginator = Paginator(orders, 5) # n orders per page
@@ -283,7 +283,6 @@ def updateOrderToPaid(request, pk):
 
 
 
-# update order to delivered
 @api_view(["PUT"])
 @permission_classes([IsAdminUser])
 def updateOrderToDelivered(request, pk):
@@ -303,9 +302,144 @@ def updateOrderToDelivered(request, pk):
     """
     try:
         order = Order.objects.get(id=pk)
+        user = request.user
+
+        # Create a new ActionLog record
+        ActionLog.objects.create(
+            user=user,
+            action=f"User {request.user.first_name} updated order {order.id} to delivered"
+        )
 
         order.is_delivered = True
         order.delivered_at = timezone.now()
+        order.save()
+
+        serializer = OrderSerializer(order, many=False)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    except ObjectDoesNotExist:
+        return Response(
+            {"error": "Order does not exist"}, status=status.HTTP_404_NOT_FOUND
+        )
+    except Exception as e:
+        logger.error(e)
+        return Response(
+            {"error": "Internal server error"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+@api_view(["PUT"])
+@permission_classes([IsAdminUser])
+def updateOrderToShipped(request, pk):
+    """
+    Update the order status to shipped.
+
+    Args:
+        request: The HTTP request object.
+        pk: The primary key of the order to be updated.
+
+    Returns:
+        A Response object with the serialized data of the updated order or an error message.
+
+    Raises:
+        ObjectDoesNotExist: If the order with the given primary key does not exist.
+        Exception: If there is an internal server error.
+    """
+    try:
+        order = Order.objects.get(id=pk)
+
+        if not request.user.is_staff and order.user != request.user:
+            return Response({"error": "Not authorized to update this order"}, status=status.HTTP_403_FORBIDDEN)
+        
+        ActionLog.objects.create(
+            user=request.user,
+            action=f"User {request.user.first_name} updated order {order.id} to shipped"
+        )
+
+        order.is_shipped = True
+        order.shipped_at = timezone.now()
+
+        order.save()
+        serializer = OrderSerializer(order, many=False)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    except ObjectDoesNotExist:
+        return Response(
+            {"error": "Order does not exist"}, status=status.HTTP_404_NOT_FOUND
+        )
+    except Exception as e:
+        logger.error(e)
+        return Response(
+            {"error": "Internal server error"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+    
+@api_view(["PUT"])
+@permission_classes([IsAdminUser])
+def resetOrderToUnshipped(request, pk):
+    """
+    Reset the order status from shipped to not shipped.
+
+    Args:
+        request: The HTTP request object.
+        pk: The primary key of the order to be updated.
+
+    Returns:
+        A Response object with the serialized data of the updated order or an error message.
+    """
+    try:
+        order = Order.objects.get(id=pk)
+
+        if not request.user.is_staff and order.user != request.user:
+            return Response({"error": "Not authorized to update this order"}, status=status.HTTP_403_FORBIDDEN)
+        
+        ActionLog.objects.create(
+            user=request.user,
+            action=f"User {request.user.first_name} updated order {order.id} to unshipped"
+        )
+
+        order.is_shipped = False
+        order.shipped_at = None
+
+        order.save()
+        serializer = OrderSerializer(order, many=False)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    except ObjectDoesNotExist:
+        return Response(
+            {"error": "Order does not exist"}, status=status.HTTP_404_NOT_FOUND
+        )
+    except Exception as e:
+        logger.error(e)
+        return Response(
+            {"error": "Internal server error"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+    
+@api_view(["PUT"])
+@permission_classes([IsAdminUser])
+def resetOrderToUndelivered(request, pk):
+    """
+    Reset the order status from delivered to not delivered.
+
+    Args:
+        request: The HTTP request object.
+        pk: The primary key of the order to be updated.
+
+    Returns:
+        A Response object with the serialized data of the updated order or an error message.
+    """
+    try:
+        order = Order.objects.get(id=pk)
+
+        ActionLog.objects.create(
+            user=request.user,
+            action=f"User {request.user.first_name} updated order {order.id} to undelivered"
+        )
+
+
+        order.is_delivered = False
+        order.delivered_at = None
 
         order.save()
         serializer = OrderSerializer(order, many=False)

@@ -172,6 +172,8 @@ class Order(models.Model):
     )
     is_paid = models.BooleanField(default=False)
     paid_at = models.DateTimeField(null=True, blank=True)
+    is_shipped = models.BooleanField(default=False)
+    shipped_at = models.DateTimeField(null=True, blank=True)
     is_delivered = models.BooleanField(default=False)
     delivered_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -215,3 +217,13 @@ class ShippingAddress(models.Model):
 
     def __str__(self):
         return f"ShippingAddress for {self.order.id}"
+
+# ActionLog 
+class ActionLog(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    action = models.CharField(max_length=200)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Log: {self.user.username} - {self.action} - {self.created_at}"
+

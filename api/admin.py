@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Category, Product, ProductImage, Mesh, Color, Review, Order, OrderItem, ShippingAddress, ShoeSize
+from .models import Category, Product, ProductImage, Mesh, Color, Review, Order, OrderItem, ShippingAddress, ShoeSize, ActionLog
 
 
 # FIXME: move admin to some safe url later
@@ -17,5 +17,6 @@ admin.site.register(Order)
 admin.site.register(OrderItem)
 admin.site.register(ShippingAddress)
 
+admin.site.register(ActionLog)
 
 

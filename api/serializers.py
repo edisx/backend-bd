@@ -12,6 +12,7 @@ from .models import (
     OrderItem,
     ShippingAddress,
     Review,
+    ActionLog,
 )
 
 # Serializer for Review
@@ -24,10 +25,11 @@ class ReviewSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     name = serializers.SerializerMethodField(read_only=True)
     isAdmin = serializers.SerializerMethodField(read_only=True)
+    isSuperuser = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = User
-        fields = ["id", "username", "email", "name", "isAdmin"]
+        fields = ["id", "username", "email", "name", "isAdmin", "isSuperuser"]
 
     def get_isAdmin(self, obj):
         return obj.is_staff
@@ -38,6 +40,10 @@ class UserSerializer(serializers.ModelSerializer):
             name = obj.email
         return name
 
+    def get_isSuperuser(self, obj):
+        return obj.is_superuser  
+
+
 
 # Serializer for User with token
 class UserSerializerWithToken(UserSerializer):
@@ -45,7 +51,7 @@ class UserSerializerWithToken(UserSerializer):
 
     class Meta:
         model = User
-        fields = ["id", "username", "email", "name", "isAdmin", "token"]
+        fields = ["id", "username", "email", "name", "isAdmin", "isSuperuser", "token"]
 
     def get_token(self, obj):
         token = RefreshToken.for_user(obj)
@@ -145,3 +151,8 @@ class OrderSerializer(serializers.ModelSerializer):
         user = obj.user
         serializer = UserSerializer(user, many=False)
         return serializer.data
+
+class ActionLogSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ActionLog
+        fields = "__all__"

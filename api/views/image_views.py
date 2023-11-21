@@ -8,6 +8,7 @@ from api.serializers import ProductImageSerializer
 from api.models import ProductImage, Product
 
 from rest_framework import status
+from api.permissions import IsSuperUser
 
 import logging
 
@@ -16,9 +17,10 @@ logger = logging.getLogger(__name__)
 
 
 @api_view(["POST"])
-@permission_classes([IsAdminUser])
+@permission_classes([IsSuperUser])
 def createImage(request):
     """
+    TODO: tests
     Create a new image for a product.
 
     Args:
@@ -56,9 +58,10 @@ def createImage(request):
 
 
 @api_view(["DELETE"])
-@permission_classes([IsAdminUser])
+@permission_classes([IsSuperUser])
 def deleteImage(request, pk):
     """
+    TODO: tests
     Delete an image by its primary key.
 
     Args:

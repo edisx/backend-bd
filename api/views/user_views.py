@@ -8,6 +8,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.hashers import make_password
 from rest_framework import status
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from api.permissions import IsSuperUser
 
 import logging
 
@@ -146,7 +147,7 @@ def getUserProfile(request):
 
 
 @api_view(["GET"])
-@permission_classes([IsAdminUser])
+@permission_classes([IsSuperUser])
 def getUsers(request):
     try:
         users = User.objects.all().order_by('id')
@@ -174,7 +175,7 @@ def getUsers(request):
         )
 
 @api_view(["GET"])
-@permission_classes([IsAdminUser])
+@permission_classes([IsSuperUser])
 def getUserById(request, pk):
     """
     Retrieve a user by their ID.
@@ -204,7 +205,7 @@ def getUserById(request, pk):
 
 
 @api_view(["DELETE"])
-@permission_classes([IsAdminUser])
+@permission_classes([IsSuperUser])
 def deleteUser(request, pk):
     """
     Delete a user by their ID.
@@ -236,7 +237,7 @@ def deleteUser(request, pk):
         )
 
 @api_view(["PUT"])
-@permission_classes([IsAdminUser])
+@permission_classes([IsSuperUser])
 def updateUser(request, pk):
     try:
         user = User.objects.get(id=pk)
