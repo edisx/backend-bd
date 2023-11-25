@@ -5,6 +5,9 @@ from PIL import Image
 import os
 import trimesh
 from django.conf import settings
+from io import BytesIO
+from django.core.files.storage import default_storage
+import traceback
 
 
 # Helper functions
@@ -25,6 +28,7 @@ class Category(models.Model):
     def __str__(self):
         return self.name
 
+
 # ShoeSize Model
 class ShoeSize(models.Model):
     size = models.IntegerField(unique=True)
@@ -41,7 +45,7 @@ class Product(models.Model):
         Category, null=True, blank=True, on_delete=models.SET_NULL
     )
     description = models.TextField(null=True, blank=True)
-    sizes = models.ManyToManyField(ShoeSize, blank=True, related_name='products')
+    sizes = models.ManyToManyField(ShoeSize, blank=True, related_name="products")
     rating = models.DecimalField(max_digits=7, decimal_places=2, null=True, blank=True)
     num_reviews = models.IntegerField(null=True, blank=True, default=0)
     price = models.DecimalField(max_digits=7, decimal_places=2)
@@ -57,23 +61,37 @@ class Product(models.Model):
         super().save(*args, **kwargs)
 
         if self.model_3d:
-            # Delete all meshes associated with this product (DISABLED FOR NOW)
-            # Mesh.objects.filter(product=self).delete()
-            # Load the GLB file
-            mesh = trimesh.load_mesh(self.model_3d.path)
+            try:
+                file_type = 'glb'
+                if not settings.USE_LOCAL:
+                    with default_storage.open(self.model_3d.name) as file:
+                        file_content = BytesIO(file.read())
+                    mesh = trimesh.load_mesh(file_content, file_type=file_type)
 
-            # dont delete this "geometry" key
-            for name, geometry in mesh.geometry.items():
-                if "exclude" not in name:
-                    Mesh.objects.get_or_create(product=self, name=name)
+                    for name, geometry in mesh.geometry.items():
+                        if "exclude" not in name:
+                            Mesh.objects.get_or_create(product=self, name=name)
+                else:
+                    mesh = trimesh.load_mesh(self.model_3d.path)
+                    for name, geometry in mesh.geometry.items():
+                        if "exclude" not in name:
+                            Mesh.objects.get_or_create(product=self, name=name)
+            except Exception as e:
+                print("Error:", e)
+                traceback.print_exc()
 
     def delete(self, *args, **kwargs):
-        # Check if there is a model associated and delete the file before deleting the instance
         if self.model_3d:
-            file_path = os.path.join(settings.MEDIA_ROOT, self.model_3d.path)
-            if os.path.exists(file_path):
-                os.remove(file_path)
+            if not settings.USE_LOCAL:
+                # Delete the GLB file from S3
+                default_storage.delete(self.model_3d.name)
+            else:
+                # Local storage logic
+                file_path = self.model_3d.path
+                if os.path.exists(file_path):
+                    os.remove(file_path)
 
+        # Delete associated images
         for img in self.images.all():
             img.delete()
 
@@ -81,7 +99,6 @@ class Product(models.Model):
 
     def __str__(self):
         return self.name
-
 
 # ProductImage Model
 class ProductImage(models.Model):
@@ -93,21 +110,46 @@ class ProductImage(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def save(self, *args, **kwargs):
+         # Process and save the image only once
+        if not settings.USE_LOCAL:
+            # Process image for S3
+            if self.image and not self._state.adding:
+                # Open the image using its URL
+                img = Image.open(self.image)
+
+                # Convert to JPG if it's not
+                if img.format != "JPEG":
+                    img = img.convert("RGB")
+                    buffer = BytesIO()
+                    img.save(buffer, format="JPEG")
+                    buffer.seek(0)
+
+                    # Save the processed image back to S3
+                    self.image.save(self.image.name, buffer, save=False)
+                    buffer.close()
+        else:
+            # Local storage logic
+            if self.image and not os.path.exists(self.image.path): 
+                img = Image.open(self.image.path)
+                if img.format != "JPEG":
+                    img = img.convert("RGB")
+                    img.save(self.image.path, "JPEG")
+
+        # Call the parent class's save method
         super().save(*args, **kwargs)
 
-        # Open the saved image using PIL
-        img = Image.open(self.image.path)
-
-        # Convert to JPG if it's not
-        if img.format != "JPEG":
-            img = img.convert("RGB")
-            img.save(self.image.path, "JPEG")
-
     def delete(self, *args, **kwargs):
-        if self.image:
-            file_path = os.path.join(settings.MEDIA_ROOT, self.image.path)
-            if os.path.exists(file_path):
-                os.remove(file_path)
+        if not settings.USE_LOCAL:
+            # Delete image from S3
+            if self.image:
+                default_storage.delete(self.image.name)
+        else:
+            # Local storage logic
+            if self.image:
+                file_path = os.path.join(settings.MEDIA_ROOT, self.image.path)
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+
         super().delete(*args, **kwargs)
 
     def __str__(self):
@@ -218,7 +260,8 @@ class ShippingAddress(models.Model):
     def __str__(self):
         return f"ShippingAddress for {self.order.id}"
 
-# ActionLog 
+
+# ActionLog
 class ActionLog(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     action = models.CharField(max_length=200)
@@ -226,4 +269,3 @@ class ActionLog(models.Model):
 
     def __str__(self):
         return f"Log: {self.user.username} - {self.action} - {self.created_at}"
-

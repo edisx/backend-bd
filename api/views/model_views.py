@@ -14,6 +14,7 @@ from django.conf import settings
 from api.serializers import ProductSerializer, MeshSerializer, ColorSerializer
 from django.core.files.uploadedfile import UploadedFile
 from api.permissions import IsSuperUser
+from django.core.files.storage import default_storage
 
 import logging
 
@@ -25,7 +26,6 @@ logger = logging.getLogger(__name__)
 @permission_classes([IsSuperUser])
 def createModel(request):
     """
-    TODO: tests
     Create a new model for a product.
 
     Args:
@@ -57,6 +57,8 @@ def createModel(request):
         # Validate if the file is a .glb file
         if isinstance(model_3d_file, UploadedFile) and not model_3d_file.name.endswith('.glb'):
             return Response({"error": "Model must be a .glb file"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        model_3d_file.content_type = 'model/gltf-binary'
 
         # Set the model_3d field to the uploaded file and save
         product.model_3d = model_3d_file
@@ -73,20 +75,6 @@ def createModel(request):
 @api_view(['DELETE'])
 @permission_classes([IsSuperUser])
 def deleteModel(request, pk):
-    """
-    TODO: tests
-    Delete the 3D model and associated meshes of a product.
-
-    Args:
-        request (HttpRequest): The HTTP request object.
-        pk (int): The ID of the product.
-
-    Returns:
-        Response: The HTTP response object.
-            - If the model and meshes are successfully deleted, returns a success message with status 200 (OK).
-            - If the product is not found, returns an error message with status 404 (Not Found).
-            - If an error occurs during deletion, returns an error message with status 500 (Internal Server Error).
-    """
     try:
         product = Product.objects.get(id=pk)
 
@@ -95,12 +83,16 @@ def deleteModel(request, pk):
 
         # Delete the 3D model file if it exists
         if product.model_3d:
-            file_path = os.path.join(settings.MEDIA_ROOT, product.model_3d.path)
-            if os.path.exists(file_path):
-                os.remove(file_path)
+            if settings.USE_LOCAL:
+                file_path = os.path.join(settings.MEDIA_ROOT, product.model_3d.name)
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+            else:
+                # Handle deletion from S3
+                default_storage.delete(product.model_3d.name)
 
-        product.model_3d = None
-        product.save()
+            product.model_3d = None
+            product.save()
 
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -111,13 +103,11 @@ def deleteModel(request, pk):
         return Response({"error": "An error occurred while deleting the model"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-
 # add color to mesh
 @api_view(['POST'])
 @permission_classes([IsSuperUser])
 def addColor(request):
     """
-    TODO: tests
     Add a new color for a mesh.
 
     Args:
@@ -172,7 +162,6 @@ def addColor(request):
 @permission_classes([IsSuperUser])
 def updateColor(request, pk):
     """
-    TODO: tests
     Update the details of a color.
 
     Args:
@@ -227,7 +216,6 @@ def updateColor(request, pk):
 @permission_classes([IsSuperUser])
 def deleteColor(request, pk):
     """
-    TODO: tests
     Delete a color object.
 
     Args:
@@ -263,7 +251,6 @@ def deleteColor(request, pk):
 @permission_classes([IsSuperUser])
 def addColors(request):
     """
-    TODO: tests
     Not featured in actual website, but used for testing purposes.
     """
     data = request.data

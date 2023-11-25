@@ -10,6 +10,10 @@ from api.models import ProductImage, Product
 from rest_framework import status
 from api.permissions import IsSuperUser
 
+import os
+from django.conf import settings
+from django.core.files.storage import default_storage
+
 import logging
 
 logger = logging.getLogger(__name__)
@@ -20,7 +24,6 @@ logger = logging.getLogger(__name__)
 @permission_classes([IsSuperUser])
 def createImage(request):
     """
-    TODO: tests
     Create a new image for a product.
 
     Args:
@@ -61,7 +64,6 @@ def createImage(request):
 @permission_classes([IsSuperUser])
 def deleteImage(request, pk):
     """
-    TODO: tests
     Delete an image by its primary key.
 
     Args:
@@ -75,9 +77,24 @@ def deleteImage(request, pk):
             - If an error occurs during the deletion process, returns HTTP 500 Internal Server Error with an error message.
     """
     try:
-        imageForDeletion = ProductImage.objects.get(id=pk)
-        imageForDeletion.delete()
+        image_for_deletion = ProductImage.objects.get(id=pk)
+
+        # Delete the image from the associated product
+        product = image_for_deletion.product
+        if product and product.model_3d:
+            if settings.USE_LOCAL:
+                # Local storage logic
+                image_file_path = os.path.join(settings.MEDIA_ROOT, image_for_deletion.image.name)
+                if os.path.exists(image_file_path):
+                    os.remove(image_file_path)
+            else:
+                # S3
+                default_storage.delete(image_for_deletion.image.name)
+
+        image_for_deletion.delete()
+
         return Response(status=status.HTTP_204_NO_CONTENT)
+
     except ProductImage.DoesNotExist:
         return Response({"error": "Image not found"}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
