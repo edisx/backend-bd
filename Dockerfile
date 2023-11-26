@@ -24,9 +24,9 @@ COPY dockerfiles/gunicorn.conf /etc/supervisor/conf.d/gunicorn.conf
 COPY dockerfiles/django.conf /etc/nginx/sites-available/django.conf
 
 # Copy SSL stuff
-# COPY dockerfiles/ca_bundle.crt /etc/nginx/ssl/ca_bundle.crt
-# COPY dockerfiles/certificate.crt /etc/nginx/ssl/certificate.crt
-# COPY dockerfiles/private.key /etc/nginx/ssl/private.key
+COPY dockerfiles/ca_bundle.crt /etc/nginx/ssl/ca_bundle.crt
+COPY dockerfiles/certificate.crt /etc/nginx/ssl/certificate.crt
+COPY dockerfiles/private.key /etc/nginx/ssl/private.key
 
 
 # Remove default nginx configuration and Create symbolic link for your Nginx configuration

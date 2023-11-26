@@ -1,9 +1,7 @@
 # create .env like .env.example
 
-# add your project name in gunicorn.conf
-
-# maybe change domain in django.conf
+# add your ca_bundle.crt, certificate.crt and private.key to dockerfiles
 
 # sudo docker build -t backend .
 
-# sudo docker run -d -p 80:80 -p --env-file .env backend
+# sudo docker run -d -p 80:80 -p 443:443 --env-file .env backend
