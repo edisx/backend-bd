@@ -188,7 +188,7 @@ class Review(models.Model):
     product = models.ForeignKey(
         Product, related_name="reviews", on_delete=models.CASCADE
     )
-    user = models.ForeignKey(User, related_name="reviews", on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     name = models.CharField(max_length=200, null=True, blank=True)
     rating = models.IntegerField(null=True, blank=True, default=0)
     comment = models.TextField(null=True, blank=True)
@@ -201,7 +201,7 @@ class Review(models.Model):
 
 # Order
 class Order(models.Model):
-    user = models.ForeignKey(User, related_name="orders", on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     payment_method = models.CharField(max_length=200, null=True, blank=True)
     tax_price = models.DecimalField(
         max_digits=7, decimal_places=2, null=True, blank=True
@@ -263,7 +263,7 @@ class ShippingAddress(models.Model):
 
 # ActionLog
 class ActionLog(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     action = models.CharField(max_length=200)
     created_at = models.DateTimeField(auto_now_add=True)
 
