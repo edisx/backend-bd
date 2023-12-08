@@ -62,7 +62,7 @@ class Product(models.Model):
 
         if self.model_3d:
             try:
-                file_type = 'glb'
+                file_type = "glb"
                 if not settings.USE_LOCAL:
                     with default_storage.open(self.model_3d.name) as file:
                         file_content = BytesIO(file.read())
@@ -100,6 +100,7 @@ class Product(models.Model):
     def __str__(self):
         return self.name
 
+
 # ProductImage Model
 class ProductImage(models.Model):
     product = models.ForeignKey(
@@ -110,7 +111,7 @@ class ProductImage(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def save(self, *args, **kwargs):
-         # Process and save the image only once
+        # Process and save the image only once
         if not settings.USE_LOCAL:
             # Process image for S3
             if self.image and not self._state.adding:
@@ -129,7 +130,7 @@ class ProductImage(models.Model):
                     buffer.close()
         else:
             # Local storage logic
-            if self.image and not os.path.exists(self.image.path): 
+            if self.image and not os.path.exists(self.image.path):
                 img = Image.open(self.image.path)
                 if img.format != "JPEG":
                     img = img.convert("RGB")
@@ -201,7 +202,9 @@ class Review(models.Model):
 
 # Order
 class Order(models.Model):
-    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    user = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, related_name="orders"
+    )
     payment_method = models.CharField(max_length=200, null=True, blank=True)
     tax_price = models.DecimalField(
         max_digits=7, decimal_places=2, null=True, blank=True
